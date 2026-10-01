@@ -2,32 +2,33 @@
 	color-scheme: light dark;
 
 	--background-color: #fff;
-	--secondary-background-color: rgba(0, 164, 240, 0.4);
+	--secondary-background-color: #eef1f8;
 
-	--color-blue: #049EF4;
-	--text-color: #444;
-	--secondary-text-color: #fbf7f7;
+	--color-blue: #2b52c7;
+	--color-accent: #00b3a4;
+	--text-color: #1c2b52;
+	--secondary-text-color: #8b93ad;
 
 	--font-size: 16px;
 	--line-height: 26px;
 
-	--border-style: 1px solid #E8E8E8;
-	--header-height: 48px;
+	--border-style: 1px solid #e3e7f0;
+	--header-height: 52px;
 	--panel-width: 300px;
-	--panel-padding: 8px;
+	--panel-padding: 10px;
 	--icon-size: 20px;
 }
 
 @media (prefers-color-scheme: dark) {
 
 	:root {
-		--background-color: #222;
-		--secondary-background-color: rgba(0, 164, 240, 0.4);
+		--background-color: #0b1531;
+		--secondary-background-color: #16203f;
 
-		--text-color: #bbb;
-		--secondary-text-color: #666;
+		--text-color: #d7dcec;
+		--secondary-text-color: #7c86a8;
 
-		--border-style: 1px solid #444;
+		--border-style: 1px solid #263257;
 	}
 
 	#previewsToggler {
@@ -53,7 +54,7 @@ html {
 }
 
 body {
-	font-family: Arial, Helvetica, sans-serif;
+	font-family: "Inter", Arial, Helvetica, sans-serif;
 	margin: 0px;
 	color: var(--text-color);
 	background-color: var(--background-color);
@@ -117,13 +118,14 @@ h1 a {
 }
 
 #panel #header {
-	background-color: rgb(0, 164, 240);
+	background: linear-gradient(120deg, #1e3a8a, #2b52c7);
 }
 
 #panel h1 a {
 	color: white;
-	font-weight: bold;
-	text-shadow: 2px 2px 10px black;
+	font-weight: 700;
+	font-family: "Poppins", sans-serif;
+	text-shadow: none;
 }
 
 #panel {
@@ -137,6 +139,7 @@ h1 a {
 	display: flex;
 	flex-direction: column;
 	transition: 0s 0s height;
+	box-shadow: 2px 0 16px rgba(11, 21, 49, 0.06);
 }
 
 
@@ -549,11 +552,17 @@ iframe#viewer {
 
 
 .card {
-	border-radius: 3px;
+	border-radius: 10px;
 	overflow: hidden;
 	background-color: var(--secondary-background-color);
 	padding-bottom: 6px;
 	margin-bottom: 16px;
+	transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:hover {
+	transform: translateY(-2px);
+	box-shadow: 0 8px 20px rgba(11, 21, 49, 0.12);
 }
 
 .card.selected {

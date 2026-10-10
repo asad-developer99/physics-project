@@ -1,783 +1,204 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-    <meta charset="utf-8">
-    <title>Variation of Pressure with Depth</title>
-    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
-    <link rel="shortcut icon" href="../files/favicon_white.ico" media="(prefers-color-scheme: dark)" />
-    <link rel="shortcut icon" href="../files/favicon.ico" media="(prefers-color-scheme: light)" />
-    <link rel="stylesheet" type="text/css" href="../css/style-page.css">
-    <script async="" src="https://www.googletagmanager.com/gtag/js?id=G-7VWWT4ZKR6"></script>
-    <script>
-        window.dataLayer = window.dataLayer || [];
-        function gtag() { dataLayer.push(arguments); }
-        gtag('js', new Date());
-
-        gtag('config', 'G-7VWWT4ZKR6');
-    </script>
-    <meta name="google-site-verification" content="mz0TRB59UNqdTxhwzmXmGdgVPh8pB4YqjuUr-aWNGIY">
-
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<title>Pressure and Fluid Speed with Depth | 3D Simulation</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;800&family=Figtree:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{color-scheme:light;--bg1:#e9f1f7;--bg2:#cfdeea;--panel:rgba(255,255,255,.9);--ink:#14213d;--mute:#56607a;--line:#c7d1de;--a:#0b7a9b;--b:#d9480f;--ok:#177245}
+*{box-sizing:border-box}html,body{height:100%;margin:0}
+body{background:linear-gradient(var(--bg1),var(--bg2));color:var(--ink);font:400 14px/1.45 Figtree,system-ui,sans-serif;overflow:hidden}
+#c{position:fixed;inset:0;width:100%;height:100%;display:block}
+header{position:fixed;top:env(safe-area-inset-top,0px);left:0;right:0;display:flex;align-items:center;gap:12px;padding:12px 16px;pointer-events:none}
+header h1{font:800 20px 'Bricolage Grotesque',sans-serif;margin:0;letter-spacing:-.01em}
+header small{color:var(--mute)}
+header button{margin-left:auto;pointer-events:auto}
+.panel{position:fixed;background:var(--panel);backdrop-filter:blur(10px);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+#ctl{top:calc(56px + env(safe-area-inset-top,0px));left:14px;width:320px;max-height:calc(100% - 80px);overflow:auto}
+#out{top:calc(56px + env(safe-area-inset-top,0px));right:14px;width:290px}
+h2{font:700 15px 'Bricolage Grotesque',sans-serif;margin:0 0 8px}
+.sl{display:grid;grid-template-columns:1fr auto;gap:0 8px;margin-bottom:9px}
+.sl label{font-weight:500}.sl output{font-variant-numeric:tabular-nums;color:var(--a);font-weight:600}
+.sl input{grid-column:1/-1;width:100%;accent-color:var(--a)}
+button{font:600 13px Figtree,sans-serif;color:var(--ink);background:none;border:1px solid var(--line);border-radius:8px;padding:7px 12px;cursor:pointer}
+button:hover{border-color:var(--a)}button:focus-visible,input:focus-visible{outline:2px solid var(--a);outline-offset:2px}
+button.on{background:var(--a);border-color:var(--a);color:#fff}
+.seg{display:flex;gap:6px;margin-bottom:12px}.seg button{flex:1}
+.row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--line)}
+.row b{font-variant-numeric:tabular-nums}
+.big{font:800 30px 'Bricolage Grotesque',sans-serif;color:var(--b);line-height:1.1}
+.eq{font:500 13px ui-monospace,Menlo,monospace;color:var(--mute);margin:6px 0}
+#note{color:var(--ok);font-weight:500;margin-top:8px}
+canvas#gr{width:100%;height:96px;display:block;margin-top:8px}
+select{font:500 13px Figtree,sans-serif;color:var(--ink);background:#fff;border:1px solid var(--line);border-radius:8px;padding:6px 8px;width:100%}
+.sl select{grid-column:1/-1}
+@media(max-width:820px){#ctl{width:calc(100% - 28px);top:auto;bottom:10px;max-height:44%}#out{top:calc(50px + env(safe-area-inset-top,0px));width:210px;font-size:12px;padding:10px}.big{font-size:22px}#gr{display:none}header small{display:none}}
+</style>
 </head>
-
 <body>
+<canvas id="c"></canvas>
+<header><h1>Pressure and Fluid Speed with Depth</h1><small>Drag to rotate, scroll to zoom</small></header>
 
-    <div style="font-weight: normal;  text-decoration-line: none; padding-bottom: 2px;" id="topmenu">
-        <div>Variation of Fluid Speed with Depth</div>
+<div class="panel" id="ctl">
+<div class="seg"><button id="m1" class="on">Single nozzle</button><button id="m2">Torricelli's law</button></div>
+<div class="sl"><label for="H">Fluid height, H</label><output id="Ho"></output><input type="range" id="H" min="10" max="100" step="1" value="40"></div>
+<div class="sl" id="hrow"><label for="h">Nozzle height, h</label><output id="ho"></output><input type="range" id="h" min="1" max="38" step="1" value="20"></div>
+<div class="sl"><label for="R">Tank radius, R</label><output id="Ro"></output><input type="range" id="R" min="5" max="25" step="1" value="10"></div>
+<div class="sl"><label for="r">Nozzle radius, r</label><output id="ro"></output><input type="range" id="r" min="0.1" max="2" step="0.1" value="0.5"></div>
+<div class="sl"><label for="p">Pressure probe depth, d</label><output id="po"></output><input type="range" id="p" min="0" max="40" step="0.5" value="10"></div>
+<div class="sl"><label for="g">Gravity, g</label><output id="go"></output><input type="range" id="g" min="1.6" max="25" step="0.01" value="9.81"></div>
+<div class="sl"><label for="fl">Fluid</label><select id="fl"><option value="1000">Water (1000 kg/m³)</option><option value="1025">Seawater (1025 kg/m³)</option><option value="800">Oil (800 kg/m³)</option><option value="13534">Mercury (13534 kg/m³)</option></select></div>
+<div class="sl"><label for="s">Playback speed</label><output id="so"></output><input type="range" id="s" min="0.1" max="1" step="0.05" value="0.35"></div>
+<div class="seg" style="margin:4px 0 0"><button id="pz">Pause</button><button id="rs">Reset</button></div>
+</div>
 
-    </div>
-    <div id="sidemenu">
+<div class="panel" id="out">
+<h2>Fluid speed</h2>
+<div class="big"><span id="v">0</span> m/s</div>
+<div class="eq">v = √(2g(H − h))</div>
+<div class="row"><span>Depth of nozzle</span><b id="dep"></b></div>
+<div class="row"><span>Horizontal range</span><b id="rng"></b></div>
+<div class="row"><span>Time of flight</span><b id="tof"></b></div>
+<div class="row"><span>Flow rate</span><b id="q"></b></div>
+<div id="note"></div>
+<h2 style="margin-top:14px">Pressure at probe</h2>
+<div class="eq">P = P₀ + ρ g d</div>
+<div class="row"><span>Fluid density</span><b id="rh"></b></div>
+<div class="row"><span>Gauge</span><b id="pg"></b></div>
+<div class="row"><span>Absolute (atm)</span><b id="pa"></b></div>
+<div class="row"><span>Absolute (Pa)</span><b id="pt"></b></div>
+<canvas id="gr" aria-label="Graph of pressure against depth"></canvas>
+</div>
 
-        <strong>Pressure, P = h &rho; g + P<sub>o</sub>
-            <br>
-            P<sub>o</sub> = 1 atm &
-            <br>
-            1 atm = 101325 Pa ~ 1.01 &times; 10<sup>5</sup> Pa,
-            <br>
-            <table style="border: 5px; background-color: aqua; font-size:medium">
-                <tr>
-                    <td>P =</td>
-                    <td><a id="unitAtm"> 1.00 atm </a></td>
-                </tr>
-                <tr>
-                    <td>P =</td>
-                    <td><a id="unitPa"> 1.01 </a> &times; 10<sup>5</sup> Pa</td>
-                </tr>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+let g=9.81,rho=1000;const P0=101325;
+const D={H:40,h:20,R:10,r:0.5,p:10,s:0.35,g:9.81,mode:1,paused:false};
+const FLUID_COL={1000:0x2aa8d8,1025:0x1f8fc4,800:0xd9a21b,13534:0xaab4c0};
+const $=i=>document.getElementById(i);
+const root=document.documentElement;
 
-            </table>
+// ---------- scene ----------
+const cv=$('c'),ren=new THREE.WebGLRenderer({canvas:cv,antialias:true,alpha:true});
+ren.setPixelRatio(Math.min(devicePixelRatio,2));
+const scene=new THREE.Scene(),cam=new THREE.PerspectiveCamera(45,1,.1,2000);
+cam.position.set(60,38,95);
+const oc=new THREE.OrbitControls(cam,cv);oc.enableDamping=true;oc.target.set(14,18,0);oc.maxPolarAngle=Math.PI*.495;
+scene.add(new THREE.AmbientLight(0xffffff,.7));
+const sun=new THREE.DirectionalLight(0xffffff,.8);sun.position.set(-40,80,50);scene.add(sun);
+const grid=new THREE.GridHelper(300,60,0x6a86a8,0x8aa3c0);grid.material.transparent=true;grid.material.opacity=.35;scene.add(grid);
+const ground=new THREE.Mesh(new THREE.PlaneGeometry(300,300).rotateX(-Math.PI/2),new THREE.MeshBasicMaterial({color:0x7d97b5,transparent:true,opacity:.12}));ground.position.y=-.02;scene.add(ground);
 
-    </div>
+const tank=new THREE.Group();scene.add(tank);
+const glassM=new THREE.MeshPhongMaterial({color:0xcfe8f5,transparent:true,opacity:.18,side:THREE.DoubleSide,depthWrite:false});
+const waterM=new THREE.MeshPhongMaterial({color:0x2aa8d8,transparent:true,opacity:.5,shininess:80});
+const steelM=new THREE.MeshPhongMaterial({color:0x5b6678});
+const probeM=new THREE.MeshBasicMaterial({color:0xe03131});
+const probe=new THREE.Mesh(new THREE.SphereGeometry(.9,24,16),probeM);scene.add(probe);
+const pline=new THREE.Line(new THREE.BufferGeometry(),new THREE.LineDashedMaterial({color:0xe03131,dashSize:.8,gapSize:.5}));scene.add(pline);
+const rangeMk=new THREE.Group();scene.add(rangeMk);
+let jets=[];
 
+function clear(o){while(o.children.length){const c=o.children[0];o.remove(c);if(c.geometry)c.geometry.dispose()}}
+function heights(){return D.mode===1?[D.h]:[1,2,3,4,5,6].map(k=>D.H*k/7)}
+function build(){
+  clear(tank);const{H,R}=D;
+  const wall=new THREE.Mesh(new THREE.CylinderGeometry(R+.15,R+.15,H+4,56,1,true),glassM);wall.position.set(0,(H+4)/2,0);tank.add(wall);
+  const water=new THREE.Mesh(new THREE.CylinderGeometry(R,R,H,56),waterM);water.position.set(0,H/2,0);tank.add(water);
+  const base=new THREE.Mesh(new THREE.CylinderGeometry(R+1,R+1.4,1.5,56),steelM);base.position.y=-.75;tank.add(base);
+  // depth scale ticks on the wall
+  const step=H>60?10:5;
+  for(let y=0;y<=H;y+=step){const t=new THREE.Mesh(new THREE.BoxGeometry(1.4,.12,.12),new THREE.MeshBasicMaterial({color:y%(step*2)?0x889ab3:0x2a3b57}));t.position.set(-R-.8,y,0);tank.add(t)}
+  jets.forEach(j=>{scene.remove(j.pts);scene.remove(j.line);j.pts.geometry.dispose();j.line.geometry.dispose()});jets=[];
+  clear(rangeMk);
+  const hs=heights(),best=hs.reduce((a,b)=>Math.abs(b-H/2)<Math.abs(a-H/2)?b:a);
+  hs.forEach(h=>{
+    const v=Math.sqrt(2*g*(H-h)),T=Math.sqrt(2*h/g),N=D.mode===1?60:36;
+    const col=D.mode===2&&h===best?0xff7a1a:0x1c7ed6;
+    const pts=new THREE.Points(new THREE.BufferGeometry().setAttribute('position',new THREE.BufferAttribute(new Float32Array(N*3),3)),new THREE.PointsMaterial({color:col,size:D.mode===1?Math.max(.7,D.r*1.6):.9,transparent:true,opacity:.9,sizeAttenuation:true}));
+    pts.frustumCulled=false;scene.add(pts);
+    const cp=[];for(let i=0;i<=40;i++){const t=T*i/40;cp.push(new THREE.Vector3(R+v*t,h-.5*g*t*t,0))}
+    const line=new THREE.Line(new THREE.BufferGeometry().setFromPoints(cp),new THREE.LineBasicMaterial({color:col,transparent:true,opacity:.45}));scene.add(line);
+    jets.push({h,v,T,N,pts,line});
+    // nozzle + range marker
+    const nz=new THREE.Mesh(new THREE.CylinderGeometry(Math.max(D.r,.3)+.25,Math.max(D.r,.3)+.25,1.6,20).rotateZ(Math.PI/2),steelM);nz.position.set(R+.2,h,0);rangeMk.add(nz);
+    const mk=new THREE.Mesh(new THREE.RingGeometry(.6,1.1,32).rotateX(-Math.PI/2),new THREE.MeshBasicMaterial({color:col,side:THREE.DoubleSide}));mk.position.set(R+v*T,.05,0);rangeMk.add(mk);
+  });
+  setProbe();
+}
+function setProbe(){
+  const y=D.H-D.p;probe.position.set(0,y,0);
+  pline.geometry.setFromPoints([new THREE.Vector3(0,D.H,0),new THREE.Vector3(0,y,0)]);pline.computeLineDistances();
+}
 
-    <div id="menu">
-        <a id="message-el"><strong>Visualise underlying physics action </strong></a><br>
-        <table style="display:block" id="visualEL">
-            <tr>
-                <td> <label for="fluidH"><strong>Fluid Height,</strong></label></td>
-                <td> <strong>H</strong></td>
-                <td> = </td>
-                <td style="text-align: right;"><input type="range" id="fluidH" name="fluidH" min="5" max="100"
-                        value="40" step="5">,</td>
-                <td><input id="fluidHEl" size="4"> </td>
-                <td>m</td>
-            </tr>
-            <tr>
-                <td> <label for="nozzleH"><strong>Nozzle Position,</strong></label></td>
-                <td> <strong>h</strong></td>
-                <td> = </td>
-                <td style="text-align: right;"><input type="range" id="nozzleH" name="nozzleH" min="2" max="45"
-                        value="20" step="2">,</td>
-                <td><input id="nozzleHEl" size="4"> </td>
-                <td>m</td>
-            </tr>
-            <tr>
-                <td> <label for="tankR"><strong>Tank Radius, </strong></label></td>
-                <td> <strong>R</strong></td>
-                <td> = </td>
-                <td style="text-align: right;"><input type="range" id="tankR" name="tankR" min="5" max="25" value="10"
-                        step="1">,</td>
-                <td> <input id="tankREl" size="4"></td>
-                <td>m</td>
-            </tr>
-            <tr>
-                <td> <label for="nozzleR"><strong>Nozzle Radius,</strong></td>
-                <td> <strong>r</strong></td>
-                <td> = </td>
-                <td style="text-align: right;"><input type="range" id="nozzleR" name="nozzleR" min="0.25" max="10"
-                        value="0.5" step="0.25">,</td>
-                <td> <input id="nozzleREl" size="4"></td>
-                <td>m</td>
-            </tr>
-            <tr>
-                <td> <label for="fluidV"><strong>Fluid Speed,</strong></td>
-                <td> <strong>v</strong></td>
-                <td> = </td>
-                <td style="text-align: center;"><strong>&Sqrt;</strong><a style="text-decoration: overline;">
-                        2g(H-h)</a> = </td>
-                <td> <input id="fluidVEl" size="4"></td>
-                <td>m/s</td>
-            </tr>
-        </table>
-        <button id="law">TORRICELLI'S LAW</button>
-        <button id="reset">RESET</button>
+// ---------- readouts ----------
+const f=(x,n=2)=>x.toFixed(n);
+function readouts(){
+  const{H,h,r,p}=D;const j=D.mode===1?jets[0]:null;
+  if(j){const rng=j.v*j.T;$('v').textContent=f(j.v);$('dep').textContent=f(H-h,1)+' m';$('rng').textContent=f(rng)+' m';$('tof').textContent=f(j.T)+' s';$('q').textContent=f(Math.PI*r*r*j.v,2)+' m³/s';
+    $('note').textContent=Math.abs(h-H/2)<.5?'Nozzle is at mid-height, so the range is the largest possible.':'The range is greatest at h = H/2.'}
+  else{$('v').textContent='0 to '+f(Math.sqrt(2*g*H*6/7),1);$('dep').textContent='H/7 steps';$('rng').textContent='max '+f(H,1)+' m';$('tof').textContent='varies';$('q').textContent='varies';
+    $('note').textContent='Deeper jets leave faster, but the orange jet at mid-height lands farthest (range = H).'}
+  $('rh').textContent=rho.toLocaleString()+' kg/m³';const gp=rho*g*p;$('pg').textContent=f(gp/1000)+' kPa';$('pa').textContent=f((gp+P0)/P0)+' atm';$('pt').textContent=Math.round(gp+P0).toLocaleString()+' Pa';
+  graph();
+}
+function graph(){
+  const c=$('gr'),w=c.width=c.clientWidth*2||400,hh=c.height=192,x=c.getContext('2d');if(!c.clientWidth)return;
+  const cs=getComputedStyle(root),ink=cs.getPropertyValue('--mute').trim(),a=cs.getPropertyValue('--a').trim(),b=cs.getPropertyValue('--b').trim();
+  x.clearRect(0,0,w,hh);const m=10,pm=P0+rho*g*D.H;
+  const X=d=>m+d/D.H*(w-2*m),Y=P=>hh-m-(P-P0)/(pm-P0)*(hh-2*m-10);
+  x.strokeStyle=ink;x.globalAlpha=.4;x.lineWidth=2;x.beginPath();x.moveTo(m,hh-m);x.lineTo(w-m,hh-m);x.stroke();x.globalAlpha=1;
+  x.strokeStyle=a;x.lineWidth=4;x.beginPath();x.moveTo(X(0),Y(P0));x.lineTo(X(D.H),Y(pm));x.stroke();
+  const pp=P0+rho*g*D.p;x.fillStyle=b;x.beginPath();x.arc(X(D.p),Y(pp),9,0,7);x.fill();
+  x.fillStyle=ink;x.font='22px Figtree,sans-serif';x.fillText('P vs depth',m,22);
+}
 
-        <button onClick="pressure()">PRESSURE</button>
-    </div>
+// ---------- inputs ----------
+const S={H:'H',h:'h',R:'R',r:'r',p:'p',g:'g',s:'s'},unit={H:' m',h:' m',R:' m',r:' m',p:' m',g:' m/s²',s:'×'};
+function sync(){
+  $('h').max=D.H-2;if(D.h>D.H-2)D.h=D.H-2;$('h').value=D.h;
+  $('p').max=D.H;if(D.p>D.H)D.p=D.H;$('p').value=D.p;$('g').value=D.g;
+  for(const k in S)$(k+'o').textContent=(k==='r'?D[k].toFixed(1):k==='s'||k==='g'?D[k].toFixed(2):D[k])+unit[k];
+}
+for(const k in S)$(k).addEventListener('input',e=>{D[k]=+e.target.value;if(k==='g')g=D.g;sync();if(k==='p'){setProbe()}else if(k!=='s'){build()}readouts()});
+function mode(m){D.mode=m;$('m1').classList.toggle('on',m===1);$('m2').classList.toggle('on',m===2);$('hrow').style.opacity=m===1?1:.4;$('h').disabled=m!==1;build();readouts()}
+$('fl').addEventListener('change',e=>{rho=+e.target.value;waterM.color.setHex(FLUID_COL[rho]);readouts()});
+$('m1').onclick=()=>mode(1);$('m2').onclick=()=>mode(2);
+$('pz').onclick=()=>{D.paused=!D.paused;$('pz').textContent=D.paused?'Play':'Pause'};
+$('rs').onclick=()=>{Object.assign(D,{H:40,h:20,R:10,r:.5,p:10,s:.35,g:9.81});g=9.81;rho=1000;$('fl').value='1000';waterM.color.setHex(FLUID_COL[1000]);D.paused=false;$('pz').textContent='Pause';sync();mode(1);oc.target.set(14,18,0);cam.position.set(60,38,95)};
+
+// ---------- loop ----------
+let tt=0,last=performance.now();
+function resize(){const w=innerWidth,h=innerHeight;ren.setSize(w,h,false);cam.aspect=w/h;cam.updateProjectionMatrix();readouts()}
+addEventListener('resize',resize);
+const mq=matchMedia('(prefers-reduced-motion:reduce)');
+function loop(now){
+  requestAnimationFrame(loop);const dt=(now-last)/1000;last=now;
+  if(!D.paused)tt+=dt*D.s;
+  jets.forEach(j=>{const a=j.pts.geometry.attributes.position;
+    for(let i=0;i<j.N;i++){const t=((tt/ j.T*1.0+i/j.N)%1)*j.T;a.setXYZ(i,D.R+j.v*t,j.h-.5*g*t*t,0)}a.needsUpdate=true});
+  oc.update();ren.render(scene,cam);
+}
+sync();build();resize();readouts();
+if(mq.matches){D.paused=true;$('pz').textContent='Play'}
+requestAnimationFrame(loop);
+</script>
+    <button id="theorybutton" onClick="theorySite()" style="position:fixed;bottom:10px;left:10px;z-index:1000;cursor:pointer;">THEORY</button>
     <script>
+        function theorySite() {
 
-        function pressure() {
-
-            window.open("Thermodynamics_Pressure.html", "_self")
+            window.open("../Theory/topic-2-5.html", "_self")
         }
-
     </script>
-    <script type="module">
-        import * as THREE from '../build/three.module.js';
-        import { OrbitControls } from '../jsm/controls/OrbitControls.js';
-        import { TransformControls } from '../jsm/controls/TransformControls.js';
-        import { GUI } from '../jsm/libs/lil-gui.module.min.js';
+    <button id="simlsbutton" onClick="simlsSite()" style="position:fixed;bottom:10px;left:100px;z-index:1000;cursor:pointer;">RETURN TO SIMLS</button>
+    <script>
+        function simlsSite() {
 
-
-        let camera, aspect, fov;
-        let scene, renderer, controls, transformControls, fluid, valve;
-        let reserveTank, cylinder, flowMesh, base, indicator;
-        let fluidMaterial, greyMaterial, redMaterial, material;
-        let pressureMaterial, pressureLabel, pressureDisplay, pressureGauge, labelGeometry;
-        let flowParabola, flowPoints, flowSpline;
-        let hDist, HDist;
-        let hdisplayValue, HdisplayValue, hdisplayMaterial, HdisplayMaterial;
-        let t = 0;
-        let line = new THREE.Group(), group = new THREE.Group(), label = new THREE.Group();
-        let clock = new THREE.Clock();
-        let v = new THREE.Vector3();
-        let X;
-
-        let earth;
-        let data = [], pathPoints = [];
-        const g = 9.8;
-        const atm = 101325;
-        let presentPoint = new THREE.Vector3(-6, 0, 0);
-        let nextPoint = new THREE.Vector3(-6, 0, 0);
-        let params = {
-            h: 20, //position of nozzle from ground
-            H: 40, //fluid height from ground
-            R: 15, // radius of fluid tank
-            r: 3,   //radius of nozzle
-            V: 0,
-            posH: 30,
-            Fdensity: 1000,
-            factor1: 9.8692e-6,
-            factor2: 1e-5
+            window.open("../simls.html", "_self")
         }
-        let visualEl = document.getElementById("visualEL");
-        let fluidHInput = document.getElementById("fluidH");
-        let fluidHEl = document.getElementById("fluidHEl");
-        let nozzleHInput = document.getElementById("nozzleH");
-        let nozzleHEl = document.getElementById("nozzleHEl");
-        let tankRInput = document.getElementById("tankR");
-        let tankREl = document.getElementById("tankREl");
-        let nozzleRInput = document.getElementById("nozzleR");
-        let nozzleREl = document.getElementById("nozzleREl");
-        let fluidVEl = document.getElementById("fluidVEl");
-        fluidHEl.value = fluidHInput.value;
-        nozzleHEl.value = nozzleHInput.value;
-        tankREl.value = tankRInput.value;
-        nozzleREl.value = nozzleRInput.value;
-        fluidHInput.min = Number(nozzleHEl.value) + 5;
-        fluidVEl.value = flowPath();
-        params.H = Number(fluidHInput.value);
-        params.h = Number(nozzleHInput.value);
-        params.R = Number(tankRInput.value);
-        params.r = Number(nozzleRInput.value);
-        params.V = Number(fluidVEl.value);
-        let buttonAction = document.getElementById("action");
-        let buttonReset = document.getElementById("reset");
-        let buttonLaw = document.getElementById("law");
-        let atmEl = document.getElementById("unitAtm");
-        let paEl = document.getElementById("unitPa");
-        init()
-        animate()
-
-        function guiControls() {
-            let gui = new GUI();
-            // gui.close()
-            // camera control adjust
-            // console.log(camera.position)
-            let controlFolder = gui.addFolder("Control");
-            controlFolder.add(controls.target, 'x', -100, 100);
-            controlFolder.add(controls.target, 'y', -100, 100);
-            controlFolder.add(controls.target, 'z', -100, 100);
-            // // let cameraFolder = gui.addFolder("Camera");
-            gui.add(camera.position, 'x', -100, 100);
-            gui.add(camera.position, 'y', -100, 100);
-            gui.add(camera.position, 'z', -100, 100);
-
-        }
-
-        function flowPath() {
-
-            let vel = Number(Math.pow(2 * (params.H - params.h) * g, 0.5).toFixed(2))
-            let a = params.h < 15 ? params.h / 10 : params.h / 20;
-            for (let i = params.h; i >= -3; i = i - a) {
-
-                let X = Number(Math.pow(((2 * (params.h - i)) / g), 0.5).toFixed(3));
-                let D = Number((X * vel).toFixed(3));
-
-                pathPoints.push(new THREE.Vector3(D, i, 0));
-            }
-            return vel
-        }
-
-        function torricelliLaw(h) {
-            pathPoints = [];
-            let vel = Number(Math.pow(2 * (params.H - h) * g, 0.5).toFixed(3));
-            let a = h < 15 ? h / 10 : h / 20;
-            for (let i = h; i >= -3; i = i - a) {
-                let X = Number(Math.pow(((2 * (h - i)) / g), 0.5).toFixed(3));
-                let D = Number((X * vel).toFixed(3));
-                pathPoints.push(new THREE.Vector3(D, i, 0));
-            }
-            return pathPoints
-        }
-
-        function labelDisplay() {
-            scene.remove(label);
-
-            label = new THREE.Group()
-
-            scene.add(label);
-            label.add(hdisplayValue, HdisplayValue);
-
-            hDist = initLine({
-                points: [new THREE.Vector3(-params.R * 2 - 4, 0, 0), new THREE.Vector3(-params.R * 2 - 4, params.h, 0)],
-                lineMaterial: new THREE.LineBasicMaterial({ color: "rgb(0%, 60%, 0%)" })
-            });
-            label.add(hDist);
-            HDist = initLine({
-                points: [new THREE.Vector3(-params.R * 2 - 8, 0, 0), new THREE.Vector3(-params.R * 2 - 8, params.H, 0)],
-                lineMaterial: new THREE.LineBasicMaterial({ color: "rgb(60%, 0%, 0%)" })
-            });
-            label.add(HDist);
-
-
-            hdisplayValue.position.set(-params.R * 2 - 8, params.h / 2, 0);
-            HdisplayMaterial.map = new THREE.CanvasTexture(makeLabelCanvas(32, '   h = ' + params.h + ' m   ', "rgba(0, 0, 0, 0.3)", 'black'));
-
-
-            HdisplayValue.position.set(-params.R * 2 - 10, params.H / 2, 0);
-            hdisplayMaterial.map = new THREE.CanvasTexture(makeLabelCanvas(32, '   H = ' + params.H + ' m   ', "rgba(0, 1, 0, 0.8)", 'white'));
-        }
-
-        function init() {
-            //scene
-            scene = new THREE.Scene();
-            scene.background = new THREE.Color(0xbfd1e5);
-
-            //camera
-            createCamera(11.5, 20, 60);
-            createRenderer();
-            // createControls(7, 14, 0);
-            createLights();
-            // flowPath();
-            let scaleHorizontal = new THREE.GridHelper(160, 160);
-            scene.add(scaleHorizontal);
-            let texture = new THREE.TextureLoader().load('./assets/gravity/waterNormal.jpg')
-
-            texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
-            material = new THREE.MeshPhongMaterial({
-                color: 'aqua',
-                map: texture,
-                side: THREE.BackSide,
-                transparent: true,
-                opacity: 0.6
-            });
-            redMaterial = new THREE.MeshPhongMaterial({
-                color: 0xff0000,
-                side: THREE.DoubleSide,
-                shininess: 1,
-                specular: 0x222222
-            });
-            const labelMaterial = new THREE.MeshBasicMaterial({
-
-                side: THREE.DoubleSide,
-                transparent: true,
-            });
-
-            pressureMaterial = new THREE.MeshBasicMaterial({
-
-                side: THREE.DoubleSide,
-                transparent: true,
-            });
-
-            hdisplayMaterial = new THREE.MeshBasicMaterial({
-
-                side: THREE.DoubleSide,
-                transparent: true,
-            });
-
-            HdisplayMaterial = new THREE.MeshBasicMaterial({
-
-                side: THREE.DoubleSide,
-                transparent: true,
-            });
-
-            greyMaterial = new THREE.MeshPhongMaterial({
-                color: 'grey',
-                side: THREE.DoubleSide,
-                shininess: 0,
-                specular: 0x222222
-            });
-            pressureGauge = createPipe(10, .5, 32, false, 1.57, 3.14, greyMaterial, 1.57, -6)
-            pressureGauge.position.set(25, params.posH, 0)
-            scene.add(pressureGauge)
-            labelGeometry = new THREE.PlaneBufferGeometry(10, 10);
-            pressureGauge.add(makeText(0, 6, .5, 32, labelMaterial, 'Pressure Gauge', "rgba(0, 0, 0, 0.8)", 'white'))
-            pressureLabel = makeText(0, 10, .5, 32, pressureMaterial, '0.00' + ' kPa ', "rgba(0, 0, 0, 0)", 'black')
-            pressureGauge.add(pressureLabel)
-
-            reserveTank = createBox(80, 50, params.H, material, new THREE.Vector3(40, -50, 0), true);
-            scene.add(reserveTank)
-
-
-            let measureSpline = new THREE.CatmullRomCurve3(pathPoints);
-            let tubeGeometry = new THREE.TubeGeometry(measureSpline, 16, params.r, 8, false);
-            let material1 = new THREE.MeshLambertMaterial({ color: 0xb00000, wireframe: false });
-            flowMesh = new THREE.Mesh(tubeGeometry, material);
-            group.add(flowMesh)
-
-
-            hdisplayValue = makeText(0, 0, .5, 32, HdisplayMaterial, '   h = ' + 0 + ' m   ', "rgba(0, 1, 0, 0)", 'red')
-            HdisplayValue = makeText(0, 0, .5, 32, hdisplayMaterial, '   H = ' + 0 + ' m   ', "rgba(0, 1, 0, 0)", 'red')
-            //fluid and the cylindrical tank
-            cylinder = createPipe(params.R + 0.3, params.H + 5, 32, true, 0, 4.14, redMaterial, 0, 0)
-            cylinder.position.set(-params.R - 0.15, (params.H + 5) / 2, 0);
-            cylinder.rotation.y = 1.2;
-            group.add(cylinder);
-
-            fluid = createPipe(params.R, params.H, 32, false, 0, Math.PI * 2, material, 0, 0)
-            fluid.position.set(-params.R, params.H / 2, 0)
-            group.add(fluid);
-
-            // let base = createPipe(params.R + 0.3, 3, 32, false, 0, Math.PI * 2, redMaterial)
-            base = createBox(params.R * 2 + 0.5, 3, params.R * 2 + 0.5, redMaterial, new THREE.Vector3(-params.R - 0.5, -3.1, 0), true)
-            // base.position.set(-params.R - 0.15, -1.5, 0)
-            group.add(base);
-            valve = createPipe(params.r + 0.1, 2, 16, true, 0, 6.28, redMaterial, 0, 0);
-            valve.position.set(0.5, params.h - 0.1, 0);
-            valve.rotation.set(0, 0, 1.57);
-            group.add(valve);
-            scene.add(group)
-
-            // Add speed indicator
-            let bodyGeometry = new THREE.BoxGeometry(1.5, params.r + 0.1, params.r + 0.1);
-            indicator = new THREE.Mesh(bodyGeometry, redMaterial);
-            scene.add(indicator);
-
-            changeFlow()
-
-
-            labelDisplay()
-
-            buttonControls()
-            transformControls = new TransformControls(camera, renderer.domElement);
-            controls = new OrbitControls(camera, renderer.domElement);
-            controls.enablePan = true;
-            controls.enableZoom = true;
-            controls.target.set(7, 18, 0);
-
-            transformControls.addEventListener('change', function () {
-                let A = pressureGauge.position.y;
-
-                let X = params.H - A;
-
-                if (pressureGauge.position.y < 0 && pressureGauge.position.x < 0) {
-                    pressureGauge.position.y = 0
-                } else if (pressureGauge.position.y < -50) {
-                    pressureGauge.position.y = -50
-                }
-
-
-            });
-
-            transformControls.addEventListener('dragging-changed', function (event) {
-                controls.enabled = !event.value
-
-                let X = Number(params.H - pressureGauge.position.y).toFixed(2);
-                // console.log(pressureGauge.position.y, reserveTank.position)
-                if (pressureGauge.position.x > -2 * params.R && pressureGauge.position.x < 0 && pressureGauge.position.z > -params.R && pressureGauge.position.z < params.R && pressureGauge.position.y >= 0) {
-                    pressureCal(X)
-                } else if (pressureGauge.position.x > 0 && pressureGauge.position.x < 80 && pressureGauge.position.z > -25 && pressureGauge.position.z < 25 && pressureGauge.position.y < 0) {
-                    let Y = (- pressureGauge.position.y).toFixed(2)
-                    pressureCal(Y)
-                } else {
-                    pressureCal(0)
-
-                }
-
-            });
-
-            transformControls.size = 0.5;
-            scene.add(transformControls);
-            transformControls.attach(pressureGauge)
-
-            // guiControls()
-            document.body.appendChild(renderer.domElement);
-            // planetMovement()
-            window.addEventListener('resize', onWindowResize);
-        }
-
-        function buttonControls() {
-
-            fluidHInput.addEventListener('input', function () {
-                fluidHInput.min = params.h + 5;
-                fluidHEl.value = fluidHInput.value;
-                params.H = Number(fluidHInput.value);
-
-                changeHeight()
-                changeFlow()
-                labelDisplay()
-            })
-
-            nozzleHInput.addEventListener('input', function () {
-                nozzleHInput.max = Number(params.H) - 5;
-                nozzleHEl.value = nozzleHInput.value;
-                params.h = Number(nozzleHInput.value);
-                fluidHInput.min = params.h + 5;
-
-                if (params.r >= (params.H - params.h)) {
-                    nozzleHInput.max = params.H - params.r - 2;
-                    changeFlow()
-                } else {
-                    nozzleHInput.max = Number(params.H) - 5;
-                    nozzleRInput.max = Number(params.R) / 2 - 4;
-                    changeFlow()
-                }
-                labelDisplay()
-            })
-
-            tankRInput.addEventListener('input', function () {
-                tankREl.value = tankRInput.value;
-                params.R = Number(tankRInput.value);
-                tankRInput.min = params.r + 6;
-                changeHeight()
-            })
-
-            nozzleRInput.addEventListener('input', function () {
-                nozzleREl.value = nozzleRInput.value;
-                params.r = Number(nozzleRInput.value);
-                nozzleRInput.max = Number(params.R) / 2 - 2;
-                valveRadius()
-                changeFlow()
-            })
-
-            buttonLaw.addEventListener('click', function () {
-                cancelAnimationFrame(indicatorMovement)
-                indicator.visible = false;
-                fluidHInput.value = 70;
-                fluidHEl.value = 70;
-                params.H = 70;
-                nozzleHInput.value = 65;
-                nozzleHEl.value = 65;
-                params.h = 65;
-                tankRInput.value = 10;
-                tankREl.value = 10;
-                params.R = 10;
-                scene.remove(group);
-                group = new THREE.Group();
-                changeHeight();
-                visualEl.style.display = 'none';
-                for (let i = 2; i < params.H; i = i + 5) {
-                    data = []
-                    data = torricelliLaw(i)
-                    const measureSpline = new THREE.CatmullRomCurve3(data);
-                    let tubeGeometry = new THREE.TubeGeometry(measureSpline, 16, 1, 8, false);
-                    let material1 = new THREE.MeshLambertMaterial({ color: 0xb00000, wireframe: false });
-                    let mesh = new THREE.Mesh(tubeGeometry, material);
-                    line.add(mesh)
-                    valve = createPipe(1.1, 2, 16, true, 0, 6.28, redMaterial, 0, 0)
-                    line.add(valve);
-                    valve.rotation.set(0, 0, -1.57);
-                    valve.position.set(0.5, i - 0.1, 0);
-
-
-                }
-                scene.add(line, group)
-                camera.position.set(3, 25, 75);
-                controls.target.set(7, 25, 0);
-            })
-
-            buttonReset.addEventListener('click', function () {
-                scene.remove(group, line);
-                group = new THREE.Group();
-                indicator.visible = true;
-                fluidHInput.value = 40;
-                fluidHEl.value = 40;
-                params.H = 40;
-                nozzleHInput.value = 20;
-                nozzleHEl.value = 20;
-                params.h = 20;
-                tankRInput.value = 10;
-                tankREl.value = 10;
-                params.R = 10;
-                nozzleRInput.value = 0.5;
-                nozzleREl.value = 0.5;
-                params.r = 0.5;
-                valve = createPipe(params.r + 0.1, 2, 16, true, 0, 6.28, redMaterial, 0, 0);
-                valve.position.set(0.5, params.h - 0.1, 0);
-                valve.rotation.set(0, 0, 1.57);
-                group.add(valve);
-                scene.add(group);
-                visualEl.style.display = 'block';
-                changeHeight();
-                changeFlow();
-                labelDisplay();
-            })
-        }
-
-        function changeHeight() {
-
-            group.remove(fluid, cylinder, base)
-            cylinder = createPipe(params.R + 0.3, params.H + 5, 32, true, 0, 4.14, redMaterial, 0, 0)
-            cylinder.position.set(-params.R - 0.15, (params.H + 5) / 2, 0);
-            cylinder.rotation.y = 1.2;
-            group.add(cylinder);
-            fluid = createPipe(params.R, params.H, 32, false, 0, Math.PI * 2, material, 0, 0);
-            fluid.position.set(-params.R, params.H / 2, 0)
-            group.add(fluid);
-            base = createBox(params.R * 2 + 0.5, 3, params.R * 2 + 0.5, redMaterial, new THREE.Vector3(-params.R - 0.5, -3.1, 0), true);
-            group.add(base);
-
-        }
-
-        function changeFlow() {
-            group.remove(flowMesh);
-            valve.position.set(0.5, params.h - 0.1, 0);
-            pathPoints = [];
-            fluidVEl.value = flowPath();
-            params.V = Number(fluidVEl.value)
-            flowSpline = new THREE.CatmullRomCurve3(pathPoints);
-            let tubeGeometry = new THREE.TubeGeometry(flowSpline, 16, params.r, 8, false);
-
-            flowMesh = new THREE.Mesh(tubeGeometry, material);
-            group.add(flowMesh)
-            flowSpline = new THREE.CatmullRomCurve3(pathPoints);
-            flowPoints = flowSpline.getPoints(50);
-            const geometry = new THREE.BufferGeometry().setFromPoints(flowPoints);
-
-            const m = new THREE.LineBasicMaterial({ color: 0xff0000 });
-
-            // Create the final object to add to the scene
-
-            flowParabola = new THREE.Line(geometry, m);
-
-
-            indicatorMovement()
-        }
-
-        function valveRadius() {
-            group.remove(valve)
-            valve = createPipe(params.r + 0.1, 2, 16, true, 0, 6.28, redMaterial, 0, 0)
-            valve.position.set(0.5, params.h - 0.1, 0);
-            valve.rotation.set(0, 0, 1.57);
-            group.add(valve)
-        }
-
-        function createPipe(r, h, vertex, boolean, angle1, angle2, tex, theta, A) {
-
-            let cylinderGeometry = new THREE.CylinderGeometry(r, r, h, vertex, 1, boolean, angle1, angle2).translate(0, 0, A).rotateX(theta);
-
-            let pipe = new THREE.Mesh(cylinderGeometry, tex)
-            // pipe.rotation.y = 1.2;
-            return pipe
-        }
-
-        function createBox(x, y, z, mat, loc, boolean) {
-            let geometry = new THREE.BoxGeometry(x, y, z).translate(0, y / 2, 0);
-
-
-            let box = new THREE.Mesh(geometry, mat);
-            box.position.copy(loc)
-            return box
-        }
-
-        function createCamera(x, y, z) {
-            fov = 75;
-            const aspect = window.innerWidth / window.innerHeight;
-            const near = 0.1;
-            const far = 1500;
-
-            camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
-
-            camera.position.set(x, y, z);
-        }
-
-        function createControls(x, y, z) {
-            controls = new OrbitControls(camera, renderer.domElement);
-            controls.enablePan = true;
-            controls.enableZoom = true;
-            controls.target.set(x, y, z);
-            controls.enableDamping = true;
-            controls.dampingFactor = 0.05;
-            controls.rotateSpeed = 0.1;
-            controls.update();
-            controls.addEventListener('change', render);
-        }
-
-        function createRenderer() {
-            // create the renderer
-            renderer = new THREE.WebGLRenderer({ antialias: true });
-            renderer.alpha = true;
-            renderer.setPixelRatio(window.devicePixelRatio);
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.outputEncoding = THREE.sRGBEncoding;
-            document.body.appendChild(renderer.domElement);
-
-        }
-
-        function createLights() {
-            let hemiLight = new THREE.AmbientLight(0xffffff, .20);
-            hemiLight.position.set(0, 20, 0);
-            scene.add(hemiLight);
-
-            let dirLight = new THREE.DirectionalLight(0xffffff, 1);
-            dirLight.position.set(-30, 50, -30);
-            scene.add(dirLight);
-
-            scene.add(new THREE.AmbientLight(0xffffff, .4));
-        }
-
-        function onWindowResize() {
-
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-
-            renderer.setSize(window.innerWidth, window.innerHeight);
-
-
-        }
-
-        function addLabels(name, col, x, y) {
-
-            let text = document.createElement('div');
-            text.className = 'label';
-            text.innerHTML = name;
-            text.style.color = col;
-
-            let label = new CSS2DObject(text);
-            label.position.x = x;
-            label.position.y = y;
-
-            return label
-        }
-
-        function render() {
-
-            renderer.render(scene, camera);
-
-        }
-
-        function animate() {
-
-            requestAnimationFrame(animate);
-            camera.lookAt(scene.position);
-            controls.update();
-
-            render();
-            // console.log(weight.position.y, spring.scale.y, mark.position.y)
-
-        }
-
-        function initLine(data) {
-            let lineGeometry = new THREE.BufferGeometry().setFromPoints(data.points);
-            line = new THREE.Line(lineGeometry, data.lineMaterial);
-            return line;
-        }
-
-        function makeLabelCanvas(size, name, backgdCol, color) {
-            const borderSize = 2;
-            const ctx = document.createElement('canvas').getContext('2d');
-            const font = `${size}px bold sans-serif`;
-            ctx.font = font;
-            // measure how long the name will be
-            const doubleBorderSize = borderSize * 2;
-            const width = ctx.measureText(name).width + doubleBorderSize;
-            const height = size + doubleBorderSize;
-            ctx.canvas.width = width;
-            ctx.canvas.height = height;
-
-            // need to set font again after resizing canvas
-            ctx.font = font;
-            ctx.textBaseline = 'top';
-
-            ctx.fillStyle = backgdCol;
-            ctx.fillRect(0, 0, width, height);
-            ctx.fillStyle = color;
-            ctx.fillText(name, borderSize, borderSize);
-
-            return ctx.canvas;
-        }
-
-        function makeText(x, y, z, size, material, name, backgdCol, color) {
-            const canvas = makeLabelCanvas(size, name, backgdCol, color);
-            material.map = new THREE.CanvasTexture(canvas);
-
-            const root = new THREE.Object3D();
-            root.position.set(x, y, z);
-
-            const label = new THREE.Mesh(labelGeometry, material);
-            root.add(label);
-            const labelBaseScale = 0.01;
-            label.scale.x = canvas.width * labelBaseScale;
-            label.scale.y = canvas.height * labelBaseScale;
-
-            scene.add(root);
-            return root;
-        }
-
-        function pressureCal(pos) {
-            let A = Number(pos).toFixed(2)
-            let diff = A < 0 ? 0 : A;
-
-
-            let P = diff * params.Fdensity * g
-            let pValue = (P / 1000).toFixed(2)
-            pressureMaterial.map = new THREE.CanvasTexture(makeLabelCanvas(32, pValue + ' kPa', "rgba(0, 0, 0, 0)", 'black'));
-            atmEl.innerHTML = Number((P + atm) * params.factor1).toFixed(2) + ' atm'
-            paEl.innerHTML = Number((P + atm) * params.factor2).toFixed(2)
-            // return P
-            // console.log(pos, params.H - pos, diff, P)
-        }
-
-        function indicatorMovement() {
-            const N0 = new THREE.Vector3(0, 1, 0), N = new THREE.Vector3(0, -1, 0), B = new THREE.Vector3();
-            let matrix3 = new THREE.Matrix3();
-            let matrix4 = new THREE.Matrix4();
-            let P = new THREE.Vector3();
-
-            t = (clock.getElapsedTime() * (5 / params.h)) % 1;
-
-            let X = flowSpline.getTangent(t);
-            B.crossVectors(X, N);
-            N.crossVectors(X, B.negate());
-
-            matrix3.set(-X.x, N.x, B.x, - X.y, N.y, B.y, -X.z, N.z, B.z); // transposed arranged
-            matrix4.setFromMatrix3(matrix3);
-
-            P = flowSpline.getPoint(t);
-
-            indicator.setRotationFromMatrix(matrix4);
-            indicator.position.set(P.x, P.y, P.z);
-            requestAnimationFrame(indicatorMovement);
-        }
-
-        function addParabola() {
-
-
-            let pathPoints = [];
-            for (let i = 50; i >= -3; i = i - 1.5) {
-
-                let X = Number(Math.pow(((2 * (50 - i)) / 10), 0.5).toFixed(3));
-                let D = Number((X * 20).toFixed(3));
-
-                pathPoints.push(new THREE.Vector3(D, i, 0));
-            }
-
-
-            const spline = new THREE.CatmullRomCurve3(pathPoints);
-
-            const points = spline.getSpacedPoints(50);
-            const geometry = new THREE.BufferGeometry().setFromPoints(points);
-
-            const material = new THREE.LineBasicMaterial({ color: 'green' });
-
-            // Create the final object to add to the scene
-            const parabola = new THREE.Line(geometry, material);
-
-            return { spline, points, parabola }
-
-        }
-
     </script>
 </body>
-
 </html>

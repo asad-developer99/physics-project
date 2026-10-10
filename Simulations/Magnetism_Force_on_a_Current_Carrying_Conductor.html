@@ -5,8 +5,7 @@
 	<meta charset="utf-8">
 	<title>Force on a current carrying conductor in magnetic field</title>
 	<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
-	<link rel="shortcut icon" href="../files/favicon_white.ico" media="(prefers-color-scheme: dark)" />
-	<link rel="shortcut icon" href="../files/favicon.ico" media="(prefers-color-scheme: light)" />
+	<link rel="shortcut icon" href="../files/favicon.ico"  />
 	<link rel="stylesheet" type="text/css" href="../css/style-page.css">
 	<!-- Google tag (gtag.js) -->
 	<script async src="https://www.googletagmanager.com/gtag/js?id=G-0JWHY29KD2"></script>
@@ -855,6 +854,20 @@
 		}
 
 	</script>
+    <button id="theorybutton" onClick="theorySite()" style="position:fixed;bottom:10px;left:10px;z-index:1000;cursor:pointer;">THEORY</button>
+    <script>
+        function theorySite() {
+
+            window.open("../Theory/topic-6-4.html", "_self")
+        }
+    </script>
+    <button id="simlsbutton" onClick="simlsSite()" style="position:fixed;bottom:10px;left:100px;z-index:1000;cursor:pointer;">RETURN TO SIMLS</button>
+    <script>
+        function simlsSite() {
+
+            window.open("../simls.html", "_self")
+        }
+    </script>
 </body>
 
 </html>

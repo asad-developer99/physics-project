@@ -5,8 +5,7 @@
     <meta charset="utf-8">
     <title>Apparent Depth</title>
     <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
-    <link rel="shortcut icon" href="../files/favicon_white.ico" media="(prefers-color-scheme: dark)" />
-    <link rel="shortcut icon" href="../files/favicon.ico" media="(prefers-color-scheme: light)" />
+    <link rel="shortcut icon" href="../files/favicon.ico"  />
     <link rel="stylesheet" type="text/css" href="../css/style-page.css">
     
     <!-- Google tag (gtag.js) -->
@@ -480,6 +479,13 @@
             let eye = new THREE.Mesh(eyeGeometry, new THREE.MeshBasicMaterial({ side: THREE.DoubleSide, map: texture, transparent: true }));
 
             return eye
+        }
+    </script>
+    <button id="simlsbutton" onClick="simlsSite()" style="position:fixed;bottom:10px;left:100px;z-index:1000;cursor:pointer;">RETURN TO SIMLS</button>
+    <script>
+        function simlsSite() {
+
+            window.open("../simls.html", "_self")
         }
     </script>
 </body>

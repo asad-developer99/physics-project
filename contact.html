@@ -164,6 +164,8 @@
                     <div class="container mil-p-120-90">
                         <h3 class="mil-center mil-up mil-mb-120">Let's <span class="mil-thin">Talk</span></h3>
                         <form id="contactForm" class="row align-items-center">
+    <input type="text" name="_gotcha" tabindex="-1" autocomplete="off" aria-hidden="true" style="display:none">
+    <input type="hidden" name="_subject" value="New message from Physics Simulations 3D">
                             <div class="col-lg-6 mil-up">
                                 <input type="text" id="name" name="name" placeholder="What's your name" required>
                             </div>
@@ -184,7 +186,7 @@
                                 </div>
                             </div>
                         </form>
-                        <div id="formResponse" style="margin-top: 20px;"></div>
+                        <div id="formResponse" role="status" aria-live="polite" style="margin-top: 20px;"></div>
                     </div>
                 </section>
                 <!-- contact form end -->
@@ -430,30 +432,53 @@
     <script src="js/main.js"></script>
 
     <script>
-        document.getElementById('contactForm').addEventListener('submit', function(e) {
-            e.preventDefault(); // Відміняємо стандартну відправку форми
+        // Contact form -> Formspree (https://formspree.io)
+        // Replace YOUR_FORM_ID with the ID of your form (the part after /f/ in the form's endpoint URL).
+        const FORMSPREE_ENDPOINT = 'https://formspree.io/f/xnpjvdvd';
 
-            const formData = new FormData(this);
+        document.getElementById('contactForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+            const form = this;
+            const responseDiv = document.getElementById('formResponse');
+            const button = form.querySelector('button[type="submit"]');
+            const show = (text, color) => {
+                const p = document.createElement('p');
+                p.style.color = color;
+                p.textContent = text;
+                responseDiv.replaceChildren(p);
+            };
 
-            fetch('send_email.php', {
+            if (FORMSPREE_ENDPOINT.includes('YOUR_FORM_ID')) {
+                show('The contact form is not set up yet. Please email us at asad.developer99@gmail.com instead.', 'red');
+                return;
+            }
+
+            button.disabled = true;
+            try {
+                const res = await fetch(FORMSPREE_ENDPOINT, {
                     method: 'POST',
-                    body: formData
-                })
-                .then(response => response.json())
-                .then(data => {
-                    const responseDiv = document.getElementById('formResponse');
-                    if (data.success) {
-                        responseDiv.innerHTML = '<p style="color: green;">Message sent successfully!</p>';
-                        document.getElementById('contactForm').reset(); // Очистити форму
-                    } else {
-                        responseDiv.innerHTML = `<p style="color: red;">Error: ${data.error}</p>`;
-                    }
-                })
-                .catch(error => {
-                    document.getElementById('formResponse').innerHTML = `<p style="color: red;">An unexpected error occurred: ${error.message}</p>`;
+                    body: new FormData(form),
+                    headers: { 'Accept': 'application/json' }
                 });
+                if (res.ok) {
+                    show('Thank you! Your message has been sent.', 'green');
+                    form.reset();
+                } else {
+                    let msg = 'Sorry, your message could not be sent. Please try again later.';
+                    try {
+                        const data = await res.json();
+                        if (data.errors && data.errors.length) {
+                            msg = data.errors.map(function (x) { return x.message; }).join(' ');
+                        }
+                    } catch (_) { /* keep the default message */ }
+                    show(msg, 'red');
+                }
+            } catch (err) {
+                show('Network error. Please check your connection and try again.', 'red');
+            } finally {
+                button.disabled = false;
+            }
         });
-
     </script>
 
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js/v833ccba57c9e4d2798f2e76cebdd09a11778172276447" integrity="sha512-57MDmcccJXYtNnH+ZiBwzC4jb2rvgVCEokYN+L/nLlmO8rfYT/gIpW2A569iJ/3b+0UEasghjuZH/ma3wIs/EQ==" data-cf-beacon='{"version":"2024.11.0","token":"87b5aa28c49747bfbe230f832768f875","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>

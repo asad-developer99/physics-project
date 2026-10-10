@@ -441,19 +441,33 @@
             const form = this;
             const responseDiv = document.getElementById('formResponse');
             const button = form.querySelector('button[type="submit"]');
-            const show = (text, color) => {
-                const p = document.createElement('p');
-                p.style.color = color;
-                p.textContent = text;
-                responseDiv.replaceChildren(p);
+            const label = button.querySelector('span');
+            const labelText = label ? label.textContent : '';
+            const show = (text, ok) => {
+                const box = document.createElement('div');
+                Object.assign(box.style, {
+                    padding: '16px 20px',
+                    borderRadius: '8px',
+                    borderLeft: '5px solid ' + (ok ? '#2e9e5b' : '#d64545'),
+                    background: ok ? '#e8f6ec' : '#fdecec',
+                    color: ok ? '#14532d' : '#7f1d1d',
+                    fontSize: '16px',
+                    lineHeight: '1.5'
+                });
+                box.textContent = (ok ? '\u2713 ' : '\u26A0 ') + text;
+                responseDiv.replaceChildren(box);
+                const calm = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+                responseDiv.scrollIntoView({ behavior: calm ? 'auto' : 'smooth', block: 'center' });
             };
 
             if (FORMSPREE_ENDPOINT.includes('YOUR_FORM_ID')) {
-                show('The contact form is not set up yet. Please email us at asad.developer99@gmail.com instead.', 'red');
+                show('The contact form is not set up yet. Please email us at asad.developer99@gmail.com instead.', false);
                 return;
             }
 
             button.disabled = true;
+            if (label) label.textContent = 'Sending...';
+            responseDiv.replaceChildren();
             try {
                 const res = await fetch(FORMSPREE_ENDPOINT, {
                     method: 'POST',
@@ -461,7 +475,7 @@
                     headers: { 'Accept': 'application/json' }
                 });
                 if (res.ok) {
-                    show('Thank you! Your message has been sent.', 'green');
+                    show('Thank you! Your message has been sent.', true);
                     form.reset();
                 } else {
                     let msg = 'Sorry, your message could not be sent. Please try again later.';
@@ -471,12 +485,13 @@
                             msg = data.errors.map(function (x) { return x.message; }).join(' ');
                         }
                     } catch (_) { /* keep the default message */ }
-                    show(msg, 'red');
+                    show(msg, false);
                 }
             } catch (err) {
-                show('Network error. Please check your connection and try again.', 'red');
+                show('Network error. Please check your connection and try again.', false);
             } finally {
                 button.disabled = false;
+                if (label) label.textContent = labelText;
             }
         });
     </script>

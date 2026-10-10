@@ -436,6 +436,100 @@
         // Replace YOUR_FORM_ID with the ID of your form (the part after /f/ in the form's endpoint URL).
         const FORMSPREE_ENDPOINT = 'https://formspree.io/f/xnpjvdvd';
 
+        // Thank-you popup shown after the message has been sent
+        function showThankYou(returnFocusTo) {
+            const old = document.getElementById('thankYouOverlay');
+            if (old) old.remove();
+            const calm = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            const previousOverflow = document.body.style.overflow;
+
+            const overlay = document.createElement('div');
+            overlay.id = 'thankYouOverlay';
+            Object.assign(overlay.style, {
+                position: 'fixed', top: '0', left: '0', right: '0', bottom: '0', zIndex: '100000',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px',
+                background: 'rgba(0, 0, 0, 0.6)', opacity: calm ? '1' : '0',
+                transition: calm ? 'none' : 'opacity 0.25s ease'
+            });
+
+            const box = document.createElement('div');
+            box.setAttribute('role', 'dialog');
+            box.setAttribute('aria-modal', 'true');
+            box.setAttribute('aria-labelledby', 'thankYouTitle');
+            box.setAttribute('aria-describedby', 'thankYouText');
+            Object.assign(box.style, {
+                position: 'relative', background: '#ffffff', color: '#000000', borderRadius: '16px',
+                padding: '44px 32px 32px', width: '100%', maxWidth: '440px', textAlign: 'center',
+                boxShadow: '0 20px 60px rgba(0, 0, 0, 0.35)',
+                transform: calm ? 'none' : 'translateY(16px) scale(0.97)',
+                transition: calm ? 'none' : 'transform 0.25s ease'
+            });
+
+            const icon = document.createElement('div');
+            icon.textContent = '\u2713';
+            icon.setAttribute('aria-hidden', 'true');
+            Object.assign(icon.style, {
+                width: '72px', height: '72px', lineHeight: '72px', margin: '0 auto 20px', borderRadius: '50%',
+                background: '#2e9e5b', color: '#ffffff', fontSize: '38px', fontWeight: '700'
+            });
+
+            const title = document.createElement('h3');
+            title.id = 'thankYouTitle';
+            title.textContent = 'Thank you!';
+            title.style.margin = '0 0 12px';
+
+            const text = document.createElement('p');
+            text.id = 'thankYouText';
+            text.textContent = 'Your message has been sent. We really appreciate your ideas and feedback.';
+            Object.assign(text.style, { margin: '0 0 28px', color: '#444444', lineHeight: '1.6' });
+
+            const ok = document.createElement('button');
+            ok.type = 'button';
+            ok.textContent = 'OK';
+            Object.assign(ok.style, {
+                border: 'none', cursor: 'pointer', background: 'rgb(255, 152, 0)', color: '#000000',
+                borderRadius: '70px', height: '52px', padding: '0 48px', fontSize: '13px',
+                letterSpacing: '2px', fontWeight: '500', textTransform: 'uppercase'
+            });
+
+            const closeX = document.createElement('button');
+            closeX.type = 'button';
+            closeX.setAttribute('aria-label', 'Close');
+            closeX.textContent = '\u00D7';
+            Object.assign(closeX.style, {
+                position: 'absolute', top: '10px', right: '14px', border: 'none', background: 'transparent',
+                cursor: 'pointer', fontSize: '30px', lineHeight: '1', color: '#666666', padding: '4px 8px'
+            });
+
+            function close() {
+                document.removeEventListener('keydown', onKey);
+                overlay.remove();
+                document.body.style.overflow = previousOverflow;
+                if (returnFocusTo && returnFocusTo.focus) returnFocusTo.focus();
+            }
+            function onKey(e) {
+                if (e.key === 'Escape') { e.preventDefault(); close(); }
+                else if (e.key === 'Tab') {
+                    e.preventDefault();
+                    (document.activeElement === ok ? closeX : ok).focus();
+                }
+            }
+            ok.addEventListener('click', close);
+            closeX.addEventListener('click', close);
+            overlay.addEventListener('click', function (e) { if (e.target === overlay) close(); });
+            document.addEventListener('keydown', onKey);
+
+            box.append(closeX, icon, title, text, ok);
+            overlay.appendChild(box);
+            document.body.appendChild(overlay);
+            document.body.style.overflow = 'hidden';
+            requestAnimationFrame(function () {
+                overlay.style.opacity = '1';
+                box.style.transform = 'none';
+            });
+            ok.focus();
+        }
+
         document.getElementById('contactForm').addEventListener('submit', async function (e) {
             e.preventDefault();
             const form = this;
@@ -475,8 +569,9 @@
                     headers: { 'Accept': 'application/json' }
                 });
                 if (res.ok) {
-                    show('Thank you! Your message has been sent.', true);
+                    responseDiv.replaceChildren();
                     form.reset();
+                    showThankYou(button);
                 } else {
                     let msg = 'Sorry, your message could not be sent. Please try again later.';
                     try {

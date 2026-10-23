@@ -1,0 +1,256 @@
+ :root {
+        --font-editorial: "Instrument Serif", "Times New Roman", Times, serif;
+        --font-sans: "DM Sans", system-ui, sans-serif;
+        --bg-ink: #ffffff;
+        --bg-soft: #eceae4;
+        --text-ink: #141414;
+        --text-muted: #5c5c5c;
+        --accent: #ffffff;
+        --card: rgb(255, 152, 0);
+    }
+
+   .stack, .stack *, .stack *::before, .stack *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html {
+        scroll-behavior: auto;
+    }
+
+    html.lenis,
+    html.lenis body {
+        height: auto;
+    }
+
+    .editorial {
+        font-family: var(--font-editorial);
+        font-weight: 400;
+    }
+
+    /* ——— Stack ——— */
+    .stack {
+        position: relative;
+        background: #000;
+        color: #fff;
+        min-height: 100vh;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: clamp(1.75rem, 4vh, 2.75rem) 1.25rem clamp(2rem, 5vh, 3.5rem);
+    }
+
+    .stack__header {
+        flex-shrink: 0;
+        text-align: center;
+        z-index: 20;
+        pointer-events: none;
+        margin-bottom: clamp(1.5rem, 5vh, 3.5rem);
+        margin-top: 2rem;
+    }
+
+    .stack__header h2 {
+        font-family: var(--font-editorial);
+        font-size: clamp(1.75rem, 3.5vw, 2.5rem);
+        font-weight: 400;
+        color: #fff;
+    }
+
+    /* ——— frame turns white while the services section is active ——— */
+    .mil-frame .mil-logo,
+    .mil-frame .mil-current-page,
+    .mil-frame .mil-link span,
+    .mil-frame .mil-menu-btn span,
+    .mil-frame .mil-menu-btn span:before,
+    .mil-frame .mil-menu-btn span:after {
+        transition: color 0.3s ease, background-color 0.3s ease;
+    }
+
+    body.on-dark .mil-frame .mil-logo,
+    body.on-dark .mil-frame .mil-current-page,
+    body.on-dark .mil-frame .mil-link {
+        color: #fff;
+    }
+
+    body.on-dark .mil-frame .mil-menu-btn span,
+    body.on-dark .mil-frame .mil-menu-btn span:before,
+    body.on-dark .mil-frame .mil-menu-btn span:after {
+        background: #fff;
+    }
+
+    body.on-dark .mil-frame .mil-link svg {
+        background-color: rgba(255, 255, 255, 0.15);
+    }
+
+    body.on-dark .mil-frame .mil-link svg path {
+        fill: #fff;
+    }
+
+    .stack__stage {
+        position: relative;
+        width: min(1100px, 100%);
+        flex: 0 0 auto;
+        margin-top: auto;
+        margin-bottom: auto;
+    }
+
+    .stack__deck {
+        position: relative;
+        width: 100%;
+        height: min(62vh, 540px);
+    }
+
+    .card {
+        position: absolute;
+        inset: 0;
+        display: grid;
+        grid-template-columns: 1.15fr 0.85fr;
+        gap: clamp(1rem, 3vw, 2.5rem);
+        padding: clamp(1.25rem, 3vw, 2.25rem);
+        border-radius: 2px;
+        transform-origin: center top;
+        will-change: transform;
+        box-shadow: 0 18px 50px rgba(0, 0, 0, 0.28);
+    }
+
+    .card[data-tone="1"] {
+        background: var(--card);
+        color: var(--text-ink);
+    }
+
+    .card[data-tone="2"] {
+        background: var(--card);
+        color: var(--text-ink);
+    }
+
+    .card[data-tone="3"] {
+        background: var(--card);
+        color: var(--text-ink);
+    }
+
+    .card[data-tone="4"] {
+        background: var(--card);
+        color: var(--text-ink);
+    }
+
+    .card[data-tone="5"] {
+        background: var(--card);
+        color: var(--text-ink);
+    }
+
+    .card__content {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+    }
+
+    .card__top {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 1rem;
+        margin-bottom: 0.65rem;
+    }
+
+    .card__title {
+        font-family: var(--font-editorial);
+        font-size: clamp(2rem, 4.5vw, 3.4rem);
+        line-height: 1;
+        letter-spacing: -0.02em;
+    }
+
+    .card__lede {
+        font-size: clamp(1.85rem, 1.4vw, 1rem);
+        color: #fff;
+        font-weight: bolder;
+        line-height: 1.45;
+        max-width: 28ch;
+        margin-bottom: auto;
+    }
+
+    .card__body {
+        font-size: clamp(1rem, 1.2vw, 0.92rem);
+        line-height: 1.55;
+        max-width: 36ch;
+        opacity: 0.85;
+        margin: 1.5rem 0 1.25rem;
+    }
+
+    .card__cta {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.75rem;
+        align-self: flex-start;
+        background: #111;
+        color: #fff;
+        text-decoration: none;
+        font-size: 0.85rem;
+        padding: 0.55rem 0.55rem 0.55rem 1rem;
+        border: none;
+        cursor: pointer;
+        transition: transform 0.25s ease;
+    }
+
+    .card__cta:hover {
+        transform: translateY(-1px);
+    }
+
+    .card__cta-arrow {
+        display: grid;
+        place-items: center;
+        width: 1.75rem;
+        height: 1.75rem;
+        background: var(--accent);
+        color: #111;
+        font-size: 0.95rem;
+    }
+
+    .card__media {
+        position: relative;
+        min-height: 0;
+        display: flex;
+        justify-content: flex-end;
+        align-items: stretch;
+    }
+
+    .card__frame {
+        height: 100%;
+        overflow: hidden;
+        background: transparent;
+    }
+
+    .card__frame img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: center;
+        display: block;
+    }
+
+    @media (max-width: 768px) {
+        .stack__header {
+            margin-bottom: clamp(1.75rem, 5vh, 2.75rem);
+        }
+
+        .card__lede {
+            font-size: clamp(0.85rem, 1.4vw, 1rem);
+        }
+
+        .card {
+            grid-template-columns: 1fr;
+            grid-template-rows: auto 1fr;
+        }
+
+
+
+        .card__frame {
+            width: 100%;
+            aspect-ratio: auto;
+        }
+
+        .card__body {
+            margin: 1rem 0;
+        }
+
+        .stack__deck {
+            height: min(68vh, 580px);
+        }
+    }

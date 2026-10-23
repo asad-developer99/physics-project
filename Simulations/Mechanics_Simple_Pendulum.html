@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>SIMPLE PENDULUM</title>
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <link rel="shortcut icon" href="../favicon.png"  />
+    <link rel="stylesheet" type="text/css" href="../css/style-page.css">
+    <script async="" src="https://www.googletagmanager.com/gtag/js?id=G-7VWWT4ZKR6"></script>
+<!--     <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag() { dataLayer.push(arguments); }
+        gtag('js', new Date());
+
+        gtag('config', 'G-7VWWT4ZKR6');
+    </script> -->
+</head>
+
+<body>
+    <div id="topmenu">PENDULUM</div>
+
+    <div style="font-weight: bold; font-size: 18px" id="sidemenu">
+        <p>T=2 &pi; &radic;(L/g)</p>
+
+        <p id="cal-el">
+            <span id="single-el">L = <a id="len"> 10</a> cm; <br>
+            T = <a id="val">0.635</a> s <br></span>
+            <a id="details-el"></a>
+        </p>
+
+    </div>
+
+    <div id="menu">
+        <a style="font-weight: bolder;" id="message-el">Change the length of the pendulum in the parameters and study
+            the effect on the time period of oscillation</a><br>
+        <button id="stop">STOP</button>
+        <button id="double">Compare Pendulums</button>
+        <button id="periodic" onClick="periodicSite()">Periodic Motion</button>
+        <button id="theorybutton" onClick="theorySite()">THEORY</button>
+        <br>
+    </div>
+    <script>
+        function periodicSite() {
+
+            window.open("Mechanics_Periodic_Motion.html", "_self")
+        }
+        function theorySite() {
+
+            window.open("../Theory/topic-4-10.html", "_self")
+        }
+    </script>
+    <script type="module">
+        import * as THREE from '../build/three.module.js';
+        import { OrbitControls } from '../jsm/controls/OrbitControls.js';
+        import { CSS2DRenderer, CSS2DObject } from '../jsm/renderers/CSS2DRenderer.js';
+        import Stats from '../jsm/libs/stats.module.js';
+        import { GUI } from '../jsm/libs/lil-gui.module.min.js';
+
+        let scene, camera, mainLight, renderer, labelRenderer, stats, controls, clock;
+        let width = window.innerWidth, height = window.innerHeight;
+        let mass, point, string, massPoint, wall, grid, plane, massMark, myChart, point1, point2;
+        let angleGeometry, angleMeasure, marker1, marker2, line;
+        let t = 0, x = 0, i = 0, period = 0;
+        let pointData = [], point1Data = [], point2Data = [];
+        let presentPoint = new THREE.Vector3(0, 0, 0);
+        let nextPoint = new THREE.Vector3(0, -10, 0);
+        let data = [], dataX = [], dataY = [], dataV = [];
+        let points = [];
+        let motion = true, double = false, stop = false;
+        let velocity, PEarrow, tension, weight;
+        let vLabel, wLabel, tLabel;
+        let extraPendulum = new THREE.Group();
+        let dataGroup = new THREE.Group();
+        let vector = new THREE.Group();
+        let messageEl = document.getElementById('message-el');
+        let detailsEl = document.getElementById('details-el');
+        let calEl = document.getElementById('cal-el');
+        let len = document.getElementById('len');
+        let val = document.getElementById('val');
+        let buttonStop = document.getElementById('stop');
+        let buttonDouble = document.getElementById('double');
+        let params = {
+            amp: 0.15,
+            len: 10,
+            g: 9.8,
+            radius: 5,
+            pause: function () {
+                stop = !stop
+                motion = !motion;
+                pendulumAction();
+                stopAction();
+            },
+            clear: function () {
+                removeData();
+                resetPara();
+            }
+        }
+        
+        // ===== Compare mode: three independent pendulums, each with its own parameters =====
+        const compareDefaults = [
+            { title: 'Pendulum 1 (left, cyan)',   label: 'Pendulum 1', x: -5, color: 0x00ffff, css: 'rgb(0,255,255)', len: 13, amp: 0.2, mass: 5 },
+            { title: 'Pendulum 2 (centre, pink)', label: 'Pendulum 2', x: 0,  color: 0xff008c, css: 'rgb(255,0,140)', len: 10, amp: 0.2, mass: 5 },
+            { title: 'Pendulum 3 (right, green)', label: 'Pendulum 3', x: 5,  color: 0x00ff00, css: 'rgb(0,255,0)',   len: 15, amp: 0.2, mass: 5 }
+        ];
+        let comparePendulumList = [];
+        const cmp = { t: 0, last: 0, running: false, speed: 0.36 };
+        let gui, compareGUIShown = null;
+        let singleControllers = [], compareControllers = [], compareFolders = [];
+
+        function pendulumAction() {
+
+            if (double) {
+
+                setCompareVisible(true);
+                hideArrows()
+                pendulumsMotion()
+            } else if (!double) {
+                setCompareVisible(false);
+                resetPara();
+                marker1.rotation.z = 3.14 + params.amp;
+                marker2.rotation.z = 3.14 - params.amp;
+                showArrows();
+                pendulumMovement()
+            }
+
+        }
+
+        function createCamera() {
+            // Create a Camera
+            const fov = 50; // AKA Field of View
+            const aspect = width / height;
+            const near = 0.1; // the near clipping plane
+            const far = 1000; // the far clipping plane
+
+            camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
+            camera.position.set(20, 20, 30);
+
+        }
+
+        function createControls() {
+            controls = new OrbitControls(camera, renderer.domElement);
+            controls.enablePan = true;
+            controls.enableZoom = true;
+
+            controls.target.set(-8, -8.6, -16);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.rotateSpeed = 0.1;
+            controls.minDistance = .1;
+            controls.maxDistance = 5000;
+
+        }
+
+        function createLights() {
+            // Create a directional light
+            const ambientLight = new THREE.HemisphereLight(0xddeeff, 0x202020, 4);
+            mainLight = new THREE.DirectionalLight(0xffffff, 3.0);
+            scene.add(ambientLight);
+
+            // move the light back and up a bit
+            mainLight.position.set(10, 10, 10);
+
+            // remember to add the light to the scene
+            scene.add(ambientLight, mainLight);
+        }
+
+        function createRenderer() {
+            // create the renderer
+            renderer = new THREE.WebGLRenderer({
+                antialias: true
+            });
+            renderer.alpha = true;
+            renderer.setSize(width, height);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.VSMShadowMap;
+            document.body.appendChild(renderer.domElement);
+
+            labelRenderer = new CSS2DRenderer();
+            labelRenderer.setSize(window.innerWidth, window.innerHeight);
+            labelRenderer.domElement.style.position = 'absolute';
+            labelRenderer.domElement.style.top = '0px';
+            labelRenderer.domElement.style.pointerEvents = 'none';
+            document.body.appendChild(labelRenderer.domElement);
+
+        }
+
+        function init() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color('skyblue');
+            stats = new Stats();
+            clock = new THREE.Clock();
+            createCamera();
+            createLights();
+            createRenderer();
+            createControls();
+            //Grid
+            grid = new THREE.GridHelper(150, 150);
+            grid.position.y = -10;
+            let grid2 = new THREE.GridHelper(150, 150);
+            grid2.position.z = -10;
+            grid2.rotation.x = -Math.PI / 2;
+            scene.add(grid);
+
+            let boxGeometry = new THREE.BoxGeometry(25, 0.2, 1);
+            let boxMaterial = new THREE.MeshStandardMaterial({
+                color: "rgb(60%, 15%, 5%)"
+            });
+            wall = new THREE.Mesh(boxGeometry, boxMaterial);
+            wall.position.y = 14.9
+
+            let pointGeometry = new THREE.BufferGeometry().setAttribute('position',
+                new THREE.BufferAttribute(new Float32Array([0, 0, 0]), 3));
+            let pointMaterial = new THREE.PointsMaterial({ color: 0x888888, size: .2 });
+            point = new THREE.Points(pointGeometry, pointMaterial);
+            point.position.y = 15 - 0.2;
+
+            scene.add(point, wall);
+            let point2Geometry = new THREE.BufferGeometry().setAttribute('position',
+                new THREE.BufferAttribute(new Float32Array([0, 0, 0]), 3));
+            massPoint = new THREE.Points(point2Geometry, pointMaterial);
+
+            let rodGeometry = new THREE.CylinderGeometry(.02, .02, 10, 4).translate(0, -5, 0);
+            let rodMaterial = new THREE.MeshStandardMaterial({
+                color: 'black'
+            });
+            string = new THREE.Mesh(rodGeometry, rodMaterial);
+            point.add(string);
+            string.scale.set(1, 1, 1);
+
+            angleGeometry = new THREE.PlaneGeometry(4, 2).translate(0, 1, 0);
+            let texture = new THREE.TextureLoader().load('./assets/img/protractor.png');
+            angleMeasure = new THREE.Mesh(angleGeometry, new THREE.MeshBasicMaterial({ side: THREE.DoubleSide, map: texture, transparent: true }));
+            angleMeasure.rotation.z = 3.14;
+            angleMeasure.position.y = 15.0;
+            angleMeasure.scale.set(2, 2, 2);
+            scene.add(angleMeasure);
+
+            marker1 = new THREE.Mesh(new THREE.PlaneGeometry(.1, 0.8).translate(0, 3.2, 0.01), new THREE.MeshBasicMaterial({ color: 0xff0000, side: THREE.DoubleSide }));
+            marker2 = marker1.clone();
+
+
+            let sphereGeometry = new THREE.SphereGeometry(params.radius / 15, 8, 16);
+            let sphereMaterial = new THREE.MeshStandardMaterial({
+                color: 0xFF008C
+            });
+            mass = new THREE.Mesh(sphereGeometry, sphereMaterial);
+            mass.position.y = -params.len;
+            massPoint.position.z = 0.1;
+            point.add(mass)
+            mass.add(massPoint)
+            massPoint.add(vector);
+
+
+            wall.add(marker1, marker2);
+            marker1.rotation.z = 3.14 + params.amp;
+            marker2.rotation.z = 3.14 - params.amp;
+
+            len.innerHTML = (params.len).toFixed(2);
+            val.innerHTML = (pendulumEquation().T).toFixed(2);
+
+            valueCal(params.len, params.amp);
+            addArrows();
+
+           
+            comparePendulums();
+            buttonLoad();
+            pendulumAction();
+            window.addEventListener('resize', onWindowResize);
+        }
+
+        function stopAction() {
+
+            if (stop) {
+                // console.log('Stop', stop)
+                buttonStop.innerHTML = 'START';
+
+            } else {
+                
+                buttonStop.innerHTML = 'STOP';
+            }
+        }
+
+        function buttonLoad() {
+            buttonStop.addEventListener('click', function () {
+                stop = !stop
+                motion = !motion;
+
+                pendulumAction();
+                stopAction();
+                
+            });
+
+            buttonDouble.addEventListener('click', function () {
+                stop = true
+                stopAction()
+                double = !double;
+                motion = false;
+                removeData()
+                pendulumAction()
+                visualClues()
+                if (double) {
+                    pendulumsMotion()
+                    buttonDouble.innerHTML = 'Single Pendulum';
+                    
+                } else {
+                    pendulumMovement();
+                    buttonDouble.innerHTML = 'Compare Pendulums';
+                    
+                }
+            });
+
+        }
+
+        window.onload = function () {
+            init();
+            animate();
+            guiControls();
+        }
+
+        function hideArrows() {
+            velocity.visible = false;
+            weight.visible = false;
+            tension.visible = false;
+            vLabel.visible = false;
+            wLabel.visible = false;
+            tLabel.visible = false;
+        }
+
+        function showArrows() {
+            velocity.visible = true;
+            weight.visible = true;
+            tension.visible = true;
+            vLabel.visible = true;
+            wLabel.visible = true;
+            tLabel.visible = true;
+        }
+
+        function valueCal(len, amp) {
+            data = []; dataX = []; dataY = []; dataV = []; points = [];
+            period = pendulumEquation().w
+
+            for (var i = 0; i < (10); i += 0.002) {
+                let wt = i * period;
+                let a = amp * (Math.cos(wt));
+                let b = (len * Math.sin(a)).toFixed(2);
+                let c = (len * Math.cos(a)).toFixed(2);
+                let v = -amp * period * Math.sin(wt);
+                points.push(new THREE.Vector3(b, -10, -i * 5));
+                data.push(a);
+                dataX.push(c);
+                dataY.push(b);
+                dataV.push(v);
+            }
+        }
+
+        function addArrows() {
+
+            weight = addArrow(2, 0xffff00, -Math.PI);
+            wLabel = addLabels('W = mg', 'yellow')
+            scene.add(weight);
+            
+            velocity = addArrow(1, 0x0000ff, -Math.PI / 2);
+            vLabel = addLabels('F', 'blue')
+            // vLabel.position.x = -dataV[0];
+            tension = addArrow(2, 0xffffff, 0);
+            velocity.scale.set(1, dataV[0], 1)
+            tLabel = addLabels('T', 'white')
+            vector.add(velocity, tension)
+            velocity.add(vLabel)
+            tension.add(tLabel)
+            weight.position.z = .1;
+            weight.position.y = 15 - params.len;
+            wLabel.position.x = 1;
+            wLabel.position.y = 2.5;
+            vLabel.position.y = 1;
+            tLabel.position.y = 2.3;
+            tLabel.position.x = -0.5
+            weight.add(wLabel)
+        }
+
+        function addArrow(len, hex, rot) {
+            let arrowLength = new THREE.Mesh(new THREE.PlaneGeometry(0.1, len).translate(0, len / 2, 0), new THREE.MeshPhongMaterial({ color: hex, side: THREE.DoubleSide }));
+            let coneGeometry = new THREE.ConeGeometry(0.1, 0.4, 6).translate(0, len, 0);
+            let arrow = new THREE.Mesh(coneGeometry, new THREE.MeshStandardMaterial({ color: hex }));
+            arrow.add(arrowLength)
+            arrow.rotateZ(rot);
+            return arrow
+        }
+
+        function resetPara() {
+            removeData();
+            i = 0;
+            nextPoint = new THREE.Vector3(0, -10, 0);
+        }
+
+        function guiControls() {
+            // lil-gui
+            gui = new GUI();
+            gui.close()
+            gui.title('Parameters')
+
+            // ---- single pendulum controls (unchanged) ----
+            singleControllers.push(gui.add(params, 'amp', 0, 0.3, 0.01).name('Amplitude,A').onChange((value) => {
+                params.amp = value;
+                point.rotation.z = value
+                marker1.rotation.z = 3.14 + value;
+                marker2.rotation.z = 3.14 - value;
+                nextPoint = new THREE.Vector3(0, -10, 0)
+                valueCal(params.len, params.amp);
+
+                i = 0;
+                nextPoint = new THREE.Vector3(0, -10, 0);
+                weight.position.x = dataY[0];
+                weight.position.y = (15 - dataX[0]);
+                velocity.scale.set(0, dataV[0], 0)
+                messageEl.innerHTML = 'Amplitude of the oscillation only changes ';
+
+            }));
+
+            singleControllers.push(gui.add(params, 'len', 4, 25, 1).name('Length, l(cm)').onChange((value) => {
+
+                motion = false
+                params.len = value;
+
+                changeLength(value);
+                valueCal(params.len, params.amp);
+                weight.position.y = 15 - params.len;
+                val.innerText = (pendulumEquation().T).toFixed(2);
+                len.innerText = (params.len).toFixed(2);
+            }));
+            singleControllers.push(gui.add(params, 'radius', 5, 10, 0.05).name('Mass, m(gm)').onChange((value) => {
+                mass.geometry.dispose();
+                let newsphereGeometry = new THREE.SphereGeometry(params.radius / 15, 8, 16);
+                mass.geometry = newsphereGeometry;
+
+            }));
+            singleControllers.push(gui.add(params, 'clear').name('Clear Data Points'));
+
+            // ---- compare mode controls: one folder per pendulum ----
+            compareControllers.push(gui.add(cmp, 'speed', 0.05, 1, 0.01).name('Animation speed'));
+
+            comparePendulumList.forEach((p) => {
+                const folder = gui.addFolder(p.def.title);
+                if (folder.$title) folder.$title.style.borderLeft = '8px solid ' + p.def.css;
+                folder.add(p.values, 'len', 4, 25, 0.5).name('Length, l(cm)').onChange(() => onCompareChange(p));
+                folder.add(p.values, 'amp', 0, 0.3, 0.01).name('Amplitude, A(rad)').onChange(() => onCompareChange(p));
+                folder.add(p.values, 'mass', 5, 10, 0.05).name('Mass, m(gm)').onChange(() => {
+                    applyCompareMass(p);
+                    updateCompareInfo();
+                });
+                compareFolders.push(folder);
+            });
+            compareControllers.push(gui.add({ reset: resetCompareParameters }, 'reset').name('Reset all pendulums'));
+
+            setCompareGUI(double);
+        }
+
+        function render() {
+            renderer.render(scene, camera);
+            labelRenderer.render(scene, camera);
+        }
+
+        function onWindowResize() {
+
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            labelRenderer.setSize(window.innerWidth, window.innerHeight);
+
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            render();
+        }
+
+        function addLabels(name, col) {
+
+            let text = document.createElement('div');
+            text.className = 'label';
+            text.textContent = name;
+            text.style.color = col;
+
+            let label = new CSS2DObject(text);
+            
+            // return { label, text }
+            return label
+        }
+
+        function changeLength(value) {
+            let a = (value / 10)
+            string.scale.set(1, a, 1);
+            mass.position.y = -a * 10;
+
+        }
+
+        function pendulumMovement() {
+           
+            if (motion && i < data.length) {
+                // console.log(i, data[i]);
+                point.rotation.z = data[i];
+                weight.position.x = dataY[i];
+                weight.position.y = (15 - dataX[i]);
+                velocity.scale.set(1, dataV[i], 1)
+                presentPoint = points[i];
+
+                line = initLine({
+                    points: [presentPoint, nextPoint],
+                    lineMaterial: new THREE.LineBasicMaterial({ color: 'black' }),
+                    yRotation: 0,
+                    x: 0,
+                    y: 0,
+                    z: 0
+                });
+                dataGroup.add(line);
+                scene.add(dataGroup);
+                i += 1;
+                nextPoint = presentPoint;
+                stop = !stop;
+                buttonStop.innerHTML = 'STOP'
+                requestAnimationFrame(pendulumMovement);
+
+            } else if (i = data.length && motion) {
+                resetPara()
+                // console.log(data);
+                requestAnimationFrame(pendulumMovement);
+            } else {
+                t = 0;
+                x = 0;
+                velocity.scale.set(0, 0, 0);
+                point.rotation.set(0, 0, 0);
+                weight.position.x = 0;
+                weight.position.y = 15 - params.len;
+                stop = !stop;
+                buttonStop.innerHTML = 'START'
+                cancelAnimationFrame(pendulumMovement);
+            }
+        }
+
+        function pendulumEquation() {
+            let w = Math.sqrt(params.g / (params.len * 0.01))
+            let T = 2 * Math.PI / w;
+
+            return { T, w }
+        }
+
+        function initLine(data) {
+            let lineGeometry = new THREE.BufferGeometry().setFromPoints(data.points);
+            line = new THREE.Line(lineGeometry, data.lineMaterial);
+
+            line.rotation.y = data.yRotation;
+            line.position.x = data.x;
+            line.position.y = data.y;
+            line.position.z = data.z;
+            return line;
+        }
+
+        function removeData() {
+            // console.log('delete curve', dataGroup)
+            scene.remove(dataGroup)
+            dataGroup = new THREE.Group();
+            scene.add(dataGroup);
+            messageEl.innerHTML = '';
+        }
+
+        function comparePendulums() {
+            const stringGeometry = new THREE.CylinderGeometry(.02, .02, 10, 4).translate(0, -5, 0);
+            const stringMaterial = new THREE.MeshStandardMaterial({ color: 'black' });
+            const markerGeometry = new THREE.PlaneGeometry(.1, 0.8).translate(0, 3.2, 0.01);
+            const markerMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000, side: THREE.DoubleSide });
+            const pivotMaterial = new THREE.PointsMaterial({ color: 0x888888, size: .2 });
+
+            comparePendulumList = compareDefaults.map((d) => {
+                const holder = new THREE.Group();               // fixed pivot position
+                holder.position.set(d.x, 15 - 0.2, 0);
+                const swing = new THREE.Group();                // rotates about the pivot
+                const rod = new THREE.Mesh(stringGeometry, stringMaterial);
+                const bob = new THREE.Mesh(
+                    new THREE.SphereGeometry(d.mass / 15, 8, 16),
+                    new THREE.MeshStandardMaterial({ color: d.color })
+                );
+                const pivot = new THREE.Points(
+                    new THREE.BufferGeometry().setAttribute('position',
+                        new THREE.BufferAttribute(new Float32Array([0, 0, 0]), 3)),
+                    pivotMaterial
+                );
+                const m1 = new THREE.Mesh(markerGeometry, markerMaterial);   // amplitude markers
+                const m2 = new THREE.Mesh(markerGeometry, markerMaterial);
+                swing.add(rod, bob);
+                holder.add(swing, pivot, m1, m2);
+                extraPendulum.add(holder);
+
+                const p = {
+                    def: d,
+                    values: { len: d.len, amp: d.amp, mass: d.mass },
+                    swing, rod, bob, m1, m2
+                };
+                applyCompareShape(p);
+                return p;
+            });
+            extraPendulum.visible = false;
+            scene.add(extraPendulum);
+        }
+
+        function omega(lenCm) {
+            return Math.sqrt(params.g / (lenCm * 0.01));
+        }
+
+        function applyCompareShape(p) {
+            p.rod.scale.y = p.values.len / 10;          // string geometry is 10 units long
+            p.bob.position.y = -p.values.len;
+            p.m1.rotation.z = Math.PI + p.values.amp;
+            p.m2.rotation.z = Math.PI - p.values.amp;
+        }
+
+        function applyCompareMass(p) {
+            p.bob.geometry.dispose();
+            p.bob.geometry = new THREE.SphereGeometry(p.values.mass / 15, 8, 16);
+        }
+
+        function setComparePose() {
+            comparePendulumList.forEach((p) => {
+                p.swing.rotation.z = p.values.amp * Math.cos(omega(p.values.len) * cmp.t);
+            });
+        }
+
+        // Released position (t = 0): every pendulum at its own amplitude
+        function showCompareStart() {
+            cmp.t = 0;
+            setComparePose();
+        }
+
+        function onCompareChange(p) {
+            applyCompareShape(p);
+            cmp.t = 0;                                   // release all pendulums together again
+            setComparePose();
+            updateCompareInfo();
+        }
+
+        function resetCompareParameters() {
+            comparePendulumList.forEach((p) => {
+                p.values.len = p.def.len;
+                p.values.amp = p.def.amp;
+                p.values.mass = p.def.mass;
+                applyCompareShape(p);
+                applyCompareMass(p);
+            });
+            compareFolders.forEach((f) => f.controllers.forEach((c) => c.updateDisplay()));
+            cmp.t = 0;
+            setComparePose();
+            updateCompareInfo();
+        }
+
+        function setCompareVisible(show) {
+            extraPendulum.visible = show;
+            point.visible = !show;
+            marker1.visible = !show;
+            marker2.visible = !show;
+            setCompareGUI(show);
+        }
+
+        function setCompareGUI(show) {
+            if (!gui || show === compareGUIShown) return;
+            compareGUIShown = show;
+            singleControllers.forEach((c) => c.domElement.style.display = show ? 'none' : '');
+            compareControllers.forEach((c) => c.domElement.style.display = show ? '' : 'none');
+            compareFolders.forEach((f) => f.domElement.style.display = show ? '' : 'none');
+            gui.title(show ? 'Parameters: Compare Pendulums' : 'Parameters');
+            if (show) gui.open();
+        }
+
+        function updateCompareInfo() {
+            detailsEl.innerHTML = comparePendulumList.map((p) => {
+                const T = 2 * Math.PI / omega(p.values.len);
+                return '<span style="display:inline-block;width:12px;height:12px;border-radius:50%;' +
+                    'border:1px solid #333;margin-right:6px;background:' + p.def.css + '"></span>' +
+                    p.def.label + ': L = ' + p.values.len.toFixed(2) + ' cm; T = ' + T.toFixed(2) + ' s<br>' +
+                    '<span style="font-weight:normal;font-size:14px">A = ' + p.values.amp.toFixed(2) +
+                    ' rad; m = ' + p.values.mass.toFixed(2) + ' gm</span><br>';
+            }).join('');
+        }
+
+
+        function pendulumsMotion() {
+            if (!(double && motion)) {
+                // stopped: wait at the released position (no loop running)
+                if (!cmp.running) showCompareStart();
+                return;
+            }
+            if (cmp.running) return;                     // never run two loops at once
+            cmp.running = true;
+            cmp.t = 0;
+            cmp.last = performance.now();
+            requestAnimationFrame(compareStep);
+        }
+
+        function compareStep(now) {
+            if (!(double && motion)) {
+                cmp.running = false;
+                showCompareStart();
+                return;
+            }
+            const dt = Math.min((now - cmp.last) / 1000, 0.05);
+            cmp.last = now;
+            cmp.t += dt * cmp.speed;                     // slow-motion time scale
+            setComparePose();
+            requestAnimationFrame(compareStep);
+        }
+
+        function visualClues() {
+            const singleEl = document.getElementById('single-el');
+            if (double) {
+                singleEl.style.display = 'none';
+                detailsEl.style.display = 'block';
+                updateCompareInfo();
+                messageEl.innerHTML = 'Open the Parameters panel to set the length, amplitude and mass of each pendulum and compare their time periods';
+            } else {
+                singleEl.style.display = '';
+                detailsEl.style.display = 'none';
+            }
+        }
+    </script>
+
+
+    <button id="simlsbutton" onClick="simlsSite()" style="position:fixed;bottom:10px;left:100px;z-index:1000;cursor:pointer;">RETURN TO SIMLS</button>
+    <script>
+        function simlsSite() {
+
+            window.open("../simls.html", "_self")
+        }
+    </script>
+</body>
+
+</html>

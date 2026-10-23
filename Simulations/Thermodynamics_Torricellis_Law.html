@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<title>Fluid Speed with Depth (Torricelli's Law) | 3D Simulation</title>
+<style>
+:root{color-scheme:light;--bg1:#e9f1f7;--bg2:#cfdeea;--panel:rgba(255,255,255,.92);--ink:#14213d;--mute:#56607a;--line:#c7d1de;--a:#0b7a9b;--b:#d9480f;--ok:#177245;--gap:14px}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:linear-gradient(var(--bg1),var(--bg2));color:var(--ink);font:400 14px/1.45 system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;overflow:hidden;-webkit-text-size-adjust:100%}
+#c{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none}
+
+/* top bar */
+header{position:fixed;top:0;left:0;right:0;z-index:20;display:flex;align-items:center;flex-wrap:wrap;gap:8px 12px;padding:calc(10px + env(safe-area-inset-top,0px)) calc(var(--gap) + env(safe-area-inset-right,0px)) 8px calc(var(--gap) + env(safe-area-inset-left,0px));pointer-events:none}
+header h1{font:800 20px/1.15 system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;margin:0;letter-spacing:-.01em}
+header small{color:var(--mute)}
+.nav{margin-left:auto;display:flex;gap:6px;pointer-events:auto}
+.nav a{font:600 12px system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:7px 11px;text-decoration:none;white-space:nowrap}
+.nav a:hover{border-color:var(--a)}
+
+.panel{position:fixed;z-index:10;background:var(--panel);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+#ctl{top:calc(64px + env(safe-area-inset-top,0px));left:calc(var(--gap) + env(safe-area-inset-left,0px));width:320px;max-height:calc(100% - 84px - env(safe-area-inset-top,0px));overflow:auto;overscroll-behavior:contain}
+#out{top:calc(64px + env(safe-area-inset-top,0px));right:calc(var(--gap) + env(safe-area-inset-right,0px));width:290px}
+h2{font:700 15px system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;margin:0 0 8px}
+.sl{display:grid;grid-template-columns:1fr auto;gap:0 8px;margin-bottom:10px}
+.sl label{font-weight:500}
+.sl output{font-variant-numeric:tabular-nums;color:var(--a);font-weight:600}
+.sl input{grid-column:1/-1;width:100%;accent-color:var(--a);height:28px;margin:0}
+button{font:600 13px system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;color:var(--ink);background:#fff;border:1px solid var(--line);border-radius:8px;padding:8px 12px;cursor:pointer;min-height:36px}
+button:hover{border-color:var(--a)}
+button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(--a);outline-offset:2px}
+button.on{background:var(--a);border-color:var(--a);color:#fff}
+button:disabled,input:disabled{opacity:.45;cursor:not-allowed}
+.seg{display:flex;gap:6px;margin-bottom:12px}.seg button{flex:1}
+.row{display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-bottom:1px solid var(--line)}
+.row b{font-variant-numeric:tabular-nums;text-align:right}
+.big{font:800 30px system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;color:var(--b);line-height:1.1;font-variant-numeric:tabular-nums}
+.eq{font:500 13px ui-monospace,Menlo,monospace;color:var(--mute);margin:6px 0}
+#note{color:var(--ok);font-weight:500;margin-top:8px}
+#tog,#otog{display:none}
+
+/* tablets / phones */
+@media(max-width:900px){
+  #ctl{width:min(300px,46vw)}
+  #out{width:min(250px,44vw);font-size:13px;padding:12px}
+  .big{font-size:26px}
+}
+@media(max-width:640px),(max-width:900px) and (orientation:portrait){
+  header h1{font-size:16px}
+  header small{display:none}
+  .nav a{padding:6px 9px;font-size:11px}
+  #out{left:calc(var(--gap) + env(safe-area-inset-left,0px));right:calc(var(--gap) + env(safe-area-inset-right,0px));width:auto;top:calc(84px + env(safe-area-inset-top,0px));padding:8px 12px;font-size:12px;
+       display:grid;grid-template-columns:auto 1fr;gap:0 14px;align-items:center}
+  #out h2,#out .eq,#out #note{display:none}
+  #out .big{font-size:22px}
+  #out .rows{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}
+  #out .row{padding:2px 0;border:0}
+  #ctl{top:auto;left:0;right:0;bottom:0;width:100%;max-height:46%;border-radius:14px 14px 0 0;border-bottom:0;padding:10px 14px calc(12px + env(safe-area-inset-bottom,0px))}
+  #ctl.min{max-height:none;overflow:hidden}
+  #ctl.min .body{display:none}
+  #tog{display:block;width:100%;margin-bottom:8px}
+  #ctl.min #tog{margin-bottom:0}
+  .sl{margin-bottom:6px}
+  .sl input{height:32px}
+}
+@media(max-height:480px) and (orientation:landscape){
+  #ctl{max-height:calc(100% - 64px)}
+  #out{display:none}
+}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+<canvas id="c" aria-label="3D view of a water tank with jets leaving side nozzles"></canvas>
+<header>
+  <h1>Fluid Speed with Depth</h1><small>Torricelli's law &middot; drag to rotate, scroll or pinch to zoom</small>
+  <nav class="nav"><a id="theorybutton" href="../theory/topic-2-5.html">THEORY</a><a id="simlsbutton" href="../simls.html">RETURN TO SIMLS</a></nav>
+</header>
+
+<div class="panel" id="ctl">
+  <button id="tog" aria-expanded="true" aria-controls="ctlbody">Hide controls</button>
+  <div class="body" id="ctlbody">
+    <div class="seg" role="group" aria-label="Mode"><button id="m1" class="on" aria-pressed="true">Single nozzle</button><button id="m2" aria-pressed="false">Torricelli's Law</button></div>
+    <div class="sl"><label for="H">Fluid height, H</label><output id="Ho" for="H"></output><input type="range" id="H" min="10" max="100" step="1" value="40"></div>
+    <div class="sl" id="hrow"><label for="h">Nozzle height, h</label><output id="ho" for="h"></output><input type="range" id="h" min="1" max="38" step="1" value="20"></div>
+    <div class="sl"><label for="R">Tank radius, R</label><output id="Ro" for="R"></output><input type="range" id="R" min="5" max="25" step="1" value="10"></div>
+    <div class="sl"><label for="r">Nozzle radius, r</label><output id="ro" for="r"></output><input type="range" id="r" min="0.1" max="2" step="0.1" value="0.5"></div>
+    <div class="sl"><label for="g">Gravity, g</label><output id="go" for="g"></output><input type="range" id="g" min="1.6" max="25" step="0.01" value="9.81"></div>
+    <div class="sl"><label for="s">Playback speed</label><output id="so" for="s"></output><input type="range" id="s" min="0.1" max="1" step="0.05" value="0.35"></div>
+    <div class="seg" style="margin:4px 0 0"><button id="pz">Pause</button><button id="vw">Reset view</button><button id="rs">Reset all</button></div>
+  </div>
+</div>
+
+<div class="panel" id="out" aria-live="polite">
+  <div>
+    <h2>Fluid speed</h2>
+    <div class="big"><span id="v">0</span> m/s</div>
+    <div class="eq">v = √(2g(H − h))</div>
+  </div>
+  <div class="rows">
+    <div class="row"><span>Depth of nozzle</span><b id="dep"></b></div>
+    <div class="row"><span>Horizontal range</span><b id="rng"></b></div>
+    <div class="row"><span>Time of flight</span><b id="tof"></b></div>
+    <div class="row"><span>Flow rate</span><b id="q"></b></div>
+    <div id="note"></div>
+  </div>
+</div>
+
+<script type="module">
+import * as THREE from '../build/three.module.js';
+import { OrbitControls } from '../jsm/controls/OrbitControls.js';
+(function(){
+'use strict';
+const DEF={H:40,h:20,R:10,r:0.5,s:0.35,g:9.81};
+const D=Object.assign({mode:1,paused:false},DEF);
+const $=i=>document.getElementById(i);
+const f=(x,n=2)=>x.toFixed(n);
+
+
+// ---------- scene ----------
+const cv=$('c');
+let ren;
+try{ren=new THREE.WebGLRenderer({canvas:cv,antialias:true,alpha:true})}
+catch(e){document.body.insertAdjacentHTML('beforeend','<div class="panel" style="top:50%;left:50%;transform:translate(-50%,-50%)">WebGL is not available in this browser.</div>');return}
+ren.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+const scene=new THREE.Scene(),cam=new THREE.PerspectiveCamera(45,1,.1,2000);
+const oc=new OrbitControls(cam,cv);oc.enableDamping=true;oc.maxPolarAngle=Math.PI*.495;oc.minDistance=15;oc.maxDistance=400;
+scene.add(new THREE.AmbientLight(0xffffff,.7));
+const sun=new THREE.DirectionalLight(0xffffff,.8);sun.position.set(-40,80,50);scene.add(sun);
+const grid=new THREE.GridHelper(300,60,0x6a86a8,0x8aa3c0);grid.material.transparent=true;grid.material.opacity=.35;scene.add(grid);
+const ground=new THREE.Mesh(new THREE.PlaneGeometry(300,300).rotateX(-Math.PI/2),new THREE.MeshBasicMaterial({color:0x7d97b5,transparent:true,opacity:.12}));ground.position.y=-.02;scene.add(ground);
+
+const tank=new THREE.Group();scene.add(tank);
+const glassM=new THREE.MeshPhongMaterial({color:0xcfe8f5,transparent:true,opacity:.18,side:THREE.DoubleSide,depthWrite:false});
+const waterM=new THREE.MeshPhongMaterial({color:0x2aa8d8,transparent:true,opacity:.5,shininess:80});
+const steelM=new THREE.MeshPhongMaterial({color:0x5b6678});
+const rangeMk=new THREE.Group();scene.add(rangeMk);
+let jets=[];
+
+function disposeTree(o){o.traverse(n=>{if(n.geometry)n.geometry.dispose();if(n.material&&n!==null&&n.material.userData.own)n.material.dispose()})}
+function clear(o){while(o.children.length){const c=o.children[0];o.remove(c);disposeTree(c)}}
+function heights(){return D.mode===1?[D.h]:[1,2,3,4,5,6,7].map(k=>D.H*k/8)}
+
+// ---------- camera framing (works for any screen shape) ----------
+function frame(){
+  const H=D.H,R=D.R;
+  const reach=R+Math.max(H,1)*1.05;               // tank + largest possible range
+  const halfW=(reach+R)/2+4,halfH=(H+6)/2+2;
+  const vf=cam.fov*Math.PI/180,tanV=Math.tan(vf/2),tanH=tanV*cam.aspect;
+  const dist=Math.max(halfH/tanV,halfW/tanH)*1.55;
+  oc.target.set((reach-R)/2,H*.45,0);
+  const dir=new THREE.Vector3(.5,.28,.82).normalize();
+  cam.position.copy(oc.target).addScaledVector(dir,dist);
+  oc.maxDistance=Math.max(400,dist*3);
+  oc.update();
+}
+
+// ---------- build ----------
+function build(){
+  clear(tank);clear(rangeMk);
+  jets.forEach(j=>{scene.remove(j.pts);scene.remove(j.line);j.pts.geometry.dispose();j.pts.material.dispose();j.line.geometry.dispose();j.line.material.dispose()});jets=[];
+  const{H,R,r}=D,g=D.g;
+  const wall=new THREE.Mesh(new THREE.CylinderGeometry(R+.15,R+.15,H+4,56,1,true),glassM);wall.position.set(0,(H+4)/2,0);tank.add(wall);
+  const water=new THREE.Mesh(new THREE.CylinderGeometry(R,R,H,56),waterM);water.position.set(0,H/2,0);tank.add(water);
+  const base=new THREE.Mesh(new THREE.CylinderGeometry(R+1,R+1.4,1.5,56),steelM);base.position.y=-.75;tank.add(base);
+  const tickM=[new THREE.MeshBasicMaterial({color:0x889ab3}),new THREE.MeshBasicMaterial({color:0x2a3b57})];
+  const step=H>60?10:5;
+  for(let y=0,i=0;y<=H;y+=step,i++){const t=new THREE.Mesh(new THREE.BoxGeometry(1.4,.12,.12),tickM[i%2]);t.position.set(-R-.8,y,0);tank.add(t)}
+  const hs=heights(),mid=H/2;
+  hs.forEach(h=>{
+    const v=Math.sqrt(2*g*(H-h)),T=Math.sqrt(2*h/g),N=D.mode===1?60:36;
+    const hot=D.mode===2&&Math.abs(h-mid)<1e-9;
+    const col=hot?0xff7a1a:0x1c7ed6;
+    const geo=new THREE.BufferGeometry().setAttribute('position',new THREE.BufferAttribute(new Float32Array(N*3),3));
+    const pts=new THREE.Points(geo,new THREE.PointsMaterial({color:col,size:D.mode===1?Math.max(.8,r*1.6):.9,transparent:true,opacity:.9,sizeAttenuation:true}));
+    pts.frustumCulled=false;scene.add(pts);
+    const cp=[];for(let i=0;i<=40;i++){const t=T*i/40;cp.push(new THREE.Vector3(R+v*t,h-.5*g*t*t,0))}
+    const line=new THREE.Line(new THREE.BufferGeometry().setFromPoints(cp),new THREE.LineBasicMaterial({color:col,transparent:true,opacity:.45}));scene.add(line);
+    jets.push({h,v,T,N,pts,line});
+    const nr=Math.max(r,.3)+.25;
+    const nz=new THREE.Mesh(new THREE.CylinderGeometry(nr,nr,1.6,20).rotateZ(Math.PI/2),steelM);nz.position.set(R+.2,h,0);rangeMk.add(nz);
+    const mk=new THREE.Mesh(new THREE.RingGeometry(.6,1.1,32).rotateX(-Math.PI/2),new THREE.MeshBasicMaterial({color:col,side:THREE.DoubleSide}));mk.position.set(R+v*T,.05,0);rangeMk.add(mk);
+  });
+}
+
+// ---------- readouts ----------
+function readouts(){
+  const{H,h,r}=D,g=D.g;
+  if(D.mode===1){
+    const j=jets[0];if(!j)return;
+    $('v').textContent=f(j.v);$('dep').textContent=f(H-h,1)+' m';$('rng').textContent=f(j.v*j.T)+' m';$('tof').textContent=f(j.T)+' s';
+    $('q').textContent=f(Math.PI*r*r*j.v,2)+' m³/s';
+    $('note').textContent=Math.abs(h-H/2)<.5?'Nozzle is at mid-height, so the range is the largest possible (= H).':'The range is greatest when h = H/2.';
+  }else{
+    const vmax=Math.sqrt(2*g*H*7/8);
+    $('v').textContent='up to '+f(vmax,1);$('dep').textContent='H/8 steps';$('rng').textContent='max '+f(H,1)+' m';$('tof').textContent='varies';$('q').textContent=f(Math.PI*r*r*vmax,2)+' m³/s max';
+    $('note').textContent='Deeper jets leave faster, but the orange jet at mid-height lands farthest (range = H).';
+  }
+}
+
+// ---------- inputs ----------
+const SL=['H','h','R','r','g','s'],unit={H:' m',h:' m',R:' m',r:' m',g:' m/s²',s:'×'};
+function sync(){
+  D.h=Math.min(D.h,D.H-2);$('h').max=D.H-2;
+  SL.forEach(k=>{$(k).value=D[k];$(k+'o').textContent=(k==='r'?D[k].toFixed(1):(k==='s'||k==='g')?D[k].toFixed(2):D[k])+unit[k]});
+}
+SL.forEach(k=>$(k).addEventListener('input',e=>{
+  D[k]=+e.target.value;sync();
+  if(k!=='s'){build();readouts();if(k==='H'||k==='R')frame()}
+}));
+function setMode(m){
+  D.mode=m;
+  $('m1').classList.toggle('on',m===1);$('m2').classList.toggle('on',m===2);
+  $('m1').setAttribute('aria-pressed',m===1);$('m2').setAttribute('aria-pressed',m===2);
+  $('hrow').style.opacity=m===1?1:.4;$('h').disabled=m!==1;
+  build();readouts();
+}
+$('m1').onclick=()=>setMode(1);$('m2').onclick=()=>setMode(2);
+$('pz').onclick=()=>{D.paused=!D.paused;$('pz').textContent=D.paused?'Play':'Pause'};
+$('vw').onclick=frame;
+$('rs').onclick=()=>{Object.assign(D,DEF,{paused:false});$('pz').textContent='Pause';sync();setMode(1);frame()};
+const tog=$('tog'),ctl=$('ctl');
+tog.onclick=()=>{const m=ctl.classList.toggle('min');tog.textContent=m?'Show controls':'Hide controls';tog.setAttribute('aria-expanded',!m)};
+
+// ---------- loop ----------
+let tt=0,last=performance.now();
+function resize(){
+  const w=Math.max(1,innerWidth),h=Math.max(1,innerHeight);
+  ren.setSize(w,h,false);cam.aspect=w/h;cam.updateProjectionMatrix();
+}
+let rt;addEventListener('resize',()=>{resize();clearTimeout(rt);rt=setTimeout(frame,150)});
+addEventListener('orientationchange',()=>setTimeout(()=>{resize();frame()},250));
+document.addEventListener('visibilitychange',()=>{last=performance.now()});
+const mq=matchMedia('(prefers-reduced-motion:reduce)');
+function loop(now){
+  requestAnimationFrame(loop);
+  const dt=Math.min((now-last)/1000,.1);last=now;
+  if(!D.paused)tt+=dt*D.s;
+  const g=D.g;
+  for(const j of jets){
+    const a=j.pts.geometry.attributes.position;
+    for(let i=0;i<j.N;i++){const t=((tt/j.T+i/j.N)%1)*j.T;a.setXYZ(i,D.R+j.v*t,j.h-.5*g*t*t,0)}
+    a.needsUpdate=true;
+  }
+  oc.update();ren.render(scene,cam);
+}
+resize();sync();build();readouts();frame();
+if(matchMedia('(max-width:640px),(max-width:900px) and (orientation:portrait)').matches){ctl.classList.add('min');tog.textContent='Show controls';tog.setAttribute('aria-expanded','false')}
+if(mq.matches){D.paused=true;$('pz').textContent='Play'}
+requestAnimationFrame(t=>{last=t;loop(t)});
+})();
+</script>
+</body>
+</html>
